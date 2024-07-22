@@ -7,6 +7,7 @@ project(sarlab-tdc VERSION 1.0.0 LANGUAGES CXX)
 
 add_executable(sarlab-tdc
     src/main.cpp
+    src/argparser.cpp
 )
 
 target_include_directories(sarlab-tdc PUBLIC
