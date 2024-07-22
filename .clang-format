@@ -1,0 +1,25 @@
+# See https://clang.llvm.org/docs/ClangFormatStyleOptions.html for options
+
+# Common settings
+BasedOnStyle: Microsoft
+
+# Language specific
+Language: Cpp
+ContinuationIndentWidth: 4
+AccessModifierOffset: -4
+SpaceAfterCStyleCast: true
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Mozilla
+ColumnLimit: 80
+ReflowComments: true
+PenaltyBreakComment: 0
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortEnumsOnASingleLine: false
+AlignOperands: Align
+AlwaysBreakTemplateDeclarations: true
+AlignAfterOpenBracket: Align
+FixNamespaceComments: false
+AlwaysBreakBeforeMultilineStrings: true
+AlignTrailingComments: false
