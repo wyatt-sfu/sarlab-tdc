@@ -20,26 +20,6 @@ IF(WIN32)
 ENDIF()
 
 # ##############################################################################
-# BUILD OPTIONS
-# ##############################################################################
-
-# Uncomment this line if you want to print out a profiling report
-# add_compile_definitions(PROFILE_BUILD)
-
-# Uncomment this line if you want lots of debug logs
-# add_compile_definitions(DEBUG_LOGGING)
-
-# Uncomment this line if you want to run address sanitizer
-# See https://learn.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-170
-# add_compile_options(/fsanitize=address)
-# add_link_options(/fsanitize=address)
-
-# Uncomment this (on Linux, requires GCC) to generate code coverage
-# Note: this is untested!
-# add_compile_options(--coverage)
-# add_link_options(--coverage)
-
-# ##############################################################################
 # SUBPROJECTS
 # ##############################################################################
 add_subdirectory(sarlab-tdc)
