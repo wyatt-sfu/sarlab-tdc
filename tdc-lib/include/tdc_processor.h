@@ -13,22 +13,21 @@ public:
 
     /**
      * Configures the raw radar data input to the processor.
-     * 
+     *
      * Arguments:
      * -----------
-     * dataBuffer: Pointer to a 2D array of raw IQ data of size nPri x nSamples.
-     *             The data is stored row-wise.
+     * rawData: Pointer to a 2D array of raw IQ data
+     *          - Size nPri x nSamples.
+     *          - Stored row-wise.
      * priTimes: Pointer to a 1D array containing the start time of each PRI.
-                 The size is nPri.
+                 - The size is nPri.
      * nPri: Number of PRIs in raw data.
      * nSamples: Number of samples per PRI.
      * modRate: The modulation rate in Hz/s.
      * sampleRate: The data sample rate in Hz.
      */
-    void setRawData(const std::complex<float> *dataBuffer,
-                    const float *priTimes, int nPri, int nSamples,
-                    float modRate, float sampleRate);
+    void setRawData(const std::complex<float> *rawData, const float *priTimes,
+                    int nPri, int nSamples, float modRate, float sampleRate);
 
 private:
-    int gpuNum = 0;
 };
