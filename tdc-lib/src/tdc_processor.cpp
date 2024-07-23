@@ -1,5 +1,5 @@
 /* Standard library headers */
-#include <complex
+#include <complex>
 #include <stdexcept>
 
 /* CUDA headers */
