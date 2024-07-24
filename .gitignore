@@ -1,6 +1,7 @@
 # Build directories
 **/build/**
 **/.cache/**
+*.egg-info
 
 # Prerequisites
 *.d
