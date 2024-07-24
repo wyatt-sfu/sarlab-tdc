@@ -2,16 +2,14 @@
 Open source time-domain correlation SAR processor for high bandwidth mmWave radars
 
 ## Computer Requirements
-This library uses CUDA, which requires a compatible NVidia GPU.
+This library uses CUDA, which requires a compatible Nvidia GPU.
 
 ## Building C++ Library
-To use vcpkg to manage dependencies, add the following argument when calling cmake:
- -DCMAKE_TOOLCHAIN_FILE=<VCPKG_ROOT>/scripts/buildsystems/vcpkg.cmake
-Where <VCPKG_ROOT> is the install location of vcpkg.
-
-In VSCode this can be done by adding to the "Cmake: Configure Args" setting.
+This library uses vcpkg to manage depencies. The vcpkg toolchain file is found
+by using the VCPKG_ROOT environment variable (check that this variable exists on
+your machine).
 
 ## Python Library Setup
-1) Install pybind in your Python environment (i.e. pip install pybind11).
-2) cd <py-tdc location>
-3) Run pip install .
+1) Install pybind in your Python environment (i.e. conda install pybind11).
+2) cd sarlabtdc
+3) pip install .

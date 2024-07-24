@@ -1,3 +1,6 @@
+#ifndef TDCPROCESSOR_H
+#define TDCPROCESSOR_H
+
 /* Standard library headers */
 #include <complex>
 
@@ -10,6 +13,9 @@ public:
      * Start the SAR processor. Returns when the processing is complete.
      */
     void start();
+
+    /* Test for pybind, delete */
+    void arrayTest(float *data, int arrLen);
 
     /**
      * Configures the raw radar data input to the processor.
@@ -31,3 +37,5 @@ public:
 
 private:
 };
+
+#endif // TDCPROCESSOR_H

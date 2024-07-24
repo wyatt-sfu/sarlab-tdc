@@ -8,7 +8,7 @@ project(tdc-lib VERSION 1.0.0 LANGUAGES CXX CUDA)
 find_package(CUDAToolkit)
 
 add_library(tdc-lib STATIC
-    src/tdc_processor.cpp
+    src/tdcprocessor.cpp
 )
 
 target_include_directories(tdc-lib PUBLIC

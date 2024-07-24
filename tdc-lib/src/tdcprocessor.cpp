@@ -1,5 +1,6 @@
 /* Standard library headers */
 #include <complex>
+#include <iostream>
 #include <stdexcept>
 
 /* CUDA headers */
@@ -7,7 +8,7 @@
 #include <driver_types.h>
 
 /* Class header */
-#include "tdc_processor.h"
+#include "tdcprocessor.h"
 
 TdcProcessor::TdcProcessor(int gpuNum)
 {
@@ -17,7 +18,18 @@ TdcProcessor::TdcProcessor(int gpuNum)
     }
 }
 
-void TdcProcessor::start() {}
+void TdcProcessor::start()
+{
+    std::cout << "TdcProcessor::start() called\n";
+}
+
+void TdcProcessor::arrayTest(float *data, int arrLen) {
+    std::cout << "TdcProcessor::arrayTest() called\n";
+    for (int i = 0; i < arrLen; ++i) {
+        std::cout << data[i] << " ";
+    }
+    std::cout << "\n";
+}
 
 void TdcProcessor::setRawData(const std::complex<float> *rawData,
                               const float *priTimes, int nPri, int nSamples,
