@@ -15,5 +15,5 @@ PYBIND11_MODULE(sarlabtdc, m)
     py::class_<TdcProcessorWrapper>(m, "TdcProcessor")
         .def(py::init<int>())
         .def("start", &TdcProcessorWrapper::start)
-        .def("arrayTest", &TdcProcessorWrapper::arrayTest);
+        .def("setRawData", &TdcProcessorWrapper::setRawData);
 }

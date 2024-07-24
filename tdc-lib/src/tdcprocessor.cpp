@@ -23,16 +23,14 @@ void TdcProcessor::start()
     std::cout << "TdcProcessor::start() called\n";
 }
 
-void TdcProcessor::arrayTest(float *data, int arrLen) {
-    std::cout << "TdcProcessor::arrayTest() called\n";
-    for (int i = 0; i < arrLen; ++i) {
-        std::cout << data[i] << " ";
-    }
-    std::cout << "\n";
-}
-
 void TdcProcessor::setRawData(const std::complex<float> *rawData,
                               const float *priTimes, int nPri, int nSamples,
                               float modRate, float sampleRate)
 {
+    this->rawData = rawData;
+    this->priTimes = priTimes;
+    this->nPri = nPri;
+    this->nSamples = nSamples;
+    this->modRate = modRate;
+    this->sampleRate = sampleRate;
 }

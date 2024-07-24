@@ -14,9 +14,6 @@ public:
      */
     void start();
 
-    /* Test for pybind, delete */
-    void arrayTest(float *data, int arrLen);
-
     /**
      * Configures the raw radar data input to the processor.
      *
@@ -36,6 +33,13 @@ public:
                     int nPri, int nSamples, float modRate, float sampleRate);
 
 private:
+    /* Raw data fields */
+    std::complex<float> const *rawData = nullptr;
+    float const *priTimes = nullptr;
+    int nPri = 0;
+    int nSamples = 0;
+    float modRate = 0.0;
+    float sampleRate = 0.0;
 };
 
 #endif // TDCPROCESSOR_H

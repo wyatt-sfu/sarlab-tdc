@@ -2,6 +2,7 @@
 #define TDCPROCESSOR_WRAPPER_H
 
 /* Standard library headers */
+#include <complex>
 #include <memory>
 
 /* Pybind headers */
@@ -14,7 +15,7 @@
 namespace py = pybind11;
 
 /**
- * This class wraps the TdcProcessor class. See that class for documentation
+ * This class wraps the TdcProcessor class. See tdcprocessor.h for documentation
  * details.
  */
 class TdcProcessorWrapper
@@ -22,7 +23,10 @@ class TdcProcessorWrapper
 public:
     TdcProcessorWrapper(int gpuNum);
     void start();
-    void arrayTest(py::array_t<float, py::array::c_style> data);
+    void setRawData(
+        py::array_t<std::complex<float>, py::array::c_style> rawData,
+        py::array_t<float, py::array::c_style> priTimes, float modRate,
+        float sampleRate);
 
 private:
     std::unique_ptr<TdcProcessor> tdcProc;
