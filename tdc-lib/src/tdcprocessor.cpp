@@ -37,3 +37,10 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData,
     this->modRate = modRate;
     this->sampleRate = sampleRate;
 }
+
+void TdcProcessor::setFocusGrid(float const *focusGrid, int nRows, int nCols)
+{
+    this->focusGrid = focusGrid;
+    gridNumRows = nRows;
+    gridNumCols = nCols;
+}

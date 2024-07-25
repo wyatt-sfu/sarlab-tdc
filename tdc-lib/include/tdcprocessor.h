@@ -38,7 +38,8 @@ public:
     void start();
 
     /**
-     * Configures the raw radar data input to the processor.
+     * Configures the raw radar data input to the processor. This needs to be
+     * called before start().
      *
      * Arguments:
      * -----------
@@ -66,16 +67,37 @@ public:
                     float const *position, float const *attitude, int nPri,
                     int nSamples, float modRate, float sampleRate);
 
+    /**
+     * Configures the focus grid. This needs to be called before start().
+     *
+     * Arguments:
+     * ------------
+     * focusGrid: Pointer to a 3D array containing focus grid locations
+     *            - Shape is nRows x nCols x 3
+     *            - Last dimension is ordered (x, y, z)
+     *            - Stored row-wise
+     * nRows: Number of rows in the focus grid
+     * nCols: Number of columns in the focus grid
+     */
+    void setFocusGrid(float const *focusGrid, int nRows, int nCols);
+
 private:
     /* Raw data fields */
     std::complex<float> const *rawData = nullptr;
     float const *priTimes = nullptr;
-    float const *position = nullptr;
-    float const *attitude = nullptr;
     int nPri = 0;
     int nSamples = 0;
     float modRate = 0.0;
     float sampleRate = 0.0;
+
+    /* Radar position fields */
+    float const *position = nullptr;
+    float const *attitude = nullptr;
+
+    /* Focus grid fields */
+    float const *focusGrid = nullptr;
+    int gridNumRows = 0;
+    int gridNumCols = 0;
 };
 
 #endif // TDCPROCESSOR_H

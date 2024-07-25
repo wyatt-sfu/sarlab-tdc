@@ -70,3 +70,26 @@ void TdcProcessorWrapper::setRawData(
     tdcProc->setRawData(dataPtr, timePtr, posPtr, attPtr, nPri, nSamples,
                         modRate, sampleRate);
 }
+
+void TdcProcessorWrapper::setFocusGrid(py::array_t<float, py::array::c_style> focusGrid)
+{
+    auto gridInfo = focusGrid.request();
+    if (gridInfo.ndim != 3) {
+        throw std::runtime_error("focusGrid must be 3D");
+    }
+
+    // Get array shape
+    int numRows = gridInfo.shape[0];
+    int numCols = gridInfo.shape[1];
+    
+    // Check the array shape
+    if (gridInfo.shape[2] != 3) {
+        throw std::runtime_error("focusGrid shape is incorrect");
+    }
+
+    // Get the pointer to the underlying data in the array
+    auto *gridPtr = reinterpret_cast<float const *>(gridInfo.ptr);
+
+    // Call the underlying C++ function
+    tdcProc->setFocusGrid(gridPtr, numRows, numCols);
+}

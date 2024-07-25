@@ -29,6 +29,7 @@ public:
         py::array_t<float, py::array::c_style> position,
         py::array_t<float, py::array::c_style> attitude, float modRate,
         float sampleRate);
+    void setFocusGrid(py::array_t<float, py::array::c_style> focusGrid);
 
 private:
     std::unique_ptr<TdcProcessor> tdcProc;
