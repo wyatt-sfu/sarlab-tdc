@@ -1,4 +1,5 @@
 #include "tdcprocessor_wrapper.h"
+#include <stdexcept>
 
 TdcProcessorWrapper::TdcProcessorWrapper(int gpuNum)
 {
@@ -12,29 +13,60 @@ void TdcProcessorWrapper::start()
 
 void TdcProcessorWrapper::setRawData(
     py::array_t<std::complex<float>, py::array::c_style> rawData,
-    py::array_t<float, py::array::c_style> priTimes, float modRate,
+    py::array_t<float, py::array::c_style> priTimes,
+    py::array_t<float, py::array::c_style> position,
+    py::array_t<float, py::array::c_style> attitude, float modRate,
     float sampleRate)
 {
-    // Check array sizes
+    // Get array info structures
     auto dataInfo = rawData.request();
+    auto timeInfo = priTimes.request();
+    auto posInfo = position.request();
+    auto attInfo = attitude.request();
+
+    // Check array dimensions
     if (dataInfo.ndim != 2) {
         throw std::runtime_error("rawData must be 2D");
     }
 
-    auto timeInfo = priTimes.request();
     if (timeInfo.ndim != 1) {
         throw std::runtime_error("priTimes must be 1D");
     }
 
-    if (dataInfo.shape[0] != timeInfo.shape[0]) {
-        throw std::runtime_error("Shapes do not match");
+    if (posInfo.ndim != 3) {
+        throw std::runtime_error("position must be 3D");
     }
 
+    if (attInfo.ndim != 3) {
+        throw std::runtime_error("attitude must be 3D");
+    }
+
+    // Get number of PRIs and number of samples from the data shape
     int nPri = dataInfo.shape[0];
     int nSamples = dataInfo.shape[1];
-    std::complex<float> const *dataPtr =
-        reinterpret_cast<std::complex<float> const *>(dataInfo.ptr);
-    float const *timePtr = reinterpret_cast<float const *>(timeInfo.ptr);
 
-    tdcProc->setRawData(dataPtr, timePtr, nPri, nSamples, modRate, sampleRate);
+    // Check the shapes of the other arrays
+    if (timeInfo.shape[0] != nPri) {
+        throw std::runtime_error("timeInfo shape is incorrect");
+    }
+
+    if (posInfo.shape[0] != nPri || posInfo.shape[1] != nSamples
+        || posInfo.shape[2] != 3) {
+        throw std::runtime_error("position shape is incorrect");
+    }
+
+    if (attInfo.shape[0] != nPri || attInfo.shape[1] != nSamples
+        || attInfo.shape[2] != 3) {
+        throw std::runtime_error("attitude shape is incorrect");
+    }
+
+    // Get the pointers to the underlying data in the arrays
+    auto *dataPtr = reinterpret_cast<std::complex<float> const *>(dataInfo.ptr);
+    auto *timePtr = reinterpret_cast<float const *>(timeInfo.ptr);
+    auto *posPtr = reinterpret_cast<float const *>(posInfo.ptr);
+    auto *attPtr = reinterpret_cast<float const *>(attInfo.ptr);
+
+    // Call the underlying C++ function
+    tdcProc->setRawData(dataPtr, timePtr, posPtr, attPtr, nPri, nSamples,
+                        modRate, sampleRate);
 }

@@ -23,12 +23,15 @@ void TdcProcessor::start()
     std::cout << "TdcProcessor::start() called\n";
 }
 
-void TdcProcessor::setRawData(const std::complex<float> *rawData,
-                              const float *priTimes, int nPri, int nSamples,
+void TdcProcessor::setRawData(std::complex<float> const *rawData,
+                              float const *priTimes, float const *position,
+                              float const *attitude, int nPri, int nSamples,
                               float modRate, float sampleRate)
 {
     this->rawData = rawData;
     this->priTimes = priTimes;
+    this->position = position;
+    this->attitude = attitude;
     this->nPri = nPri;
     this->nSamples = nSamples;
     this->modRate = modRate;
