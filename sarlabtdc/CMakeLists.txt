@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(sarlabtdc VERSION 1.0.0 LANGUAGES CXX)
 
 find_package(pybind11 CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 # Configure the C++ library as a subdirectory
 set(TDCLIB_DIR ${CMAKE_SOURCE_DIR}/../tdc-lib)
@@ -27,4 +28,5 @@ target_include_directories(sarlabtdc PUBLIC
 
 target_link_libraries(sarlabtdc PRIVATE
     tdc-lib
+    fmt::fmt
 )

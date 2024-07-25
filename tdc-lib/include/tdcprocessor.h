@@ -3,13 +3,17 @@
 
 /* Standard library headers */
 #include <complex>
+#include <memory>
+
+/* Project headers */
+#include "gpuarray.h"
 
 /**
  * Time-domain correlation SAR processor.
  *
  * Usage:
  * 1) Create an instance of the class
- * 2) Call setRawData()
+ * 2) Initialize with setRawData() and setFocusGrid()
  * 3) Call start()
  *
  * Coordinate system definition:
@@ -98,6 +102,9 @@ private:
     float const *focusGrid = nullptr;
     int gridNumRows = 0;
     int gridNumCols = 0;
+
+    /* GPU data structures */
+    std::unique_ptr<GpuArray<float>> focusGridGpu;
 };
 
 #endif // TDCPROCESSOR_H

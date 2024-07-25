@@ -1,11 +1,15 @@
 /* Standard library headers */
 #include <complex>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 
 /* CUDA headers */
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
+
+/* Project headers */
+#include "gpuarray.h"
 
 /* Class header */
 #include "tdcprocessor.h"
@@ -21,6 +25,9 @@ TdcProcessor::TdcProcessor(int gpuNum)
 void TdcProcessor::start()
 {
     std::cout << "TdcProcessor::start() called\n";
+
+    // Allocate memory on the GPU
+    focusGridGpu = std::make_unique<GpuArray<float>>(gridNumRows * gridNumCols);
 }
 
 void TdcProcessor::setRawData(std::complex<float> const *rawData,
