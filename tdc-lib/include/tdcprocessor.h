@@ -4,6 +4,12 @@
 /* Standard library headers */
 #include <complex>
 #include <memory>
+#include <vector>
+
+/* 3rd party headers */
+#include <spdlog/common.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/logger.h>
 
 /* Project headers */
 #include "gpuarray.h"
@@ -86,6 +92,9 @@ public:
     void setFocusGrid(float const *focusGrid, int nRows, int nCols);
 
 private:
+    /* Methods */
+    void initLogging();
+
     /* Raw data fields */
     std::complex<float> const *rawData = nullptr;
     float const *priTimes = nullptr;
@@ -105,6 +114,10 @@ private:
 
     /* GPU data structures */
     std::unique_ptr<GpuArray<float>> focusGridGpu;
+
+    /* Logging */
+    std::vector<spdlog::sink_ptr> sinkList;
+    std::shared_ptr<spdlog::logger> log;
 };
 
 #endif // TDCPROCESSOR_H

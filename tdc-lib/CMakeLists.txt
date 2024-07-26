@@ -7,6 +7,7 @@ project(tdc-lib VERSION 1.0.0 LANGUAGES CXX CUDA)
 
 find_package(CUDAToolkit)
 find_package(fmt CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 add_library(tdc-lib STATIC
     src/tdcprocessor.cpp
@@ -26,4 +27,5 @@ set_target_properties(tdc-lib PROPERTIES
 target_link_libraries(tdc-lib PRIVATE
     CUDA::cudart_static
     fmt::fmt
+    spdlog::spdlog
 )
