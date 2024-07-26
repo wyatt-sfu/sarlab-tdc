@@ -106,6 +106,11 @@ void TdcProcessor::allocateGpuMemory()
     focusGridGpu =
         std::make_unique<GpuPitchedArray<float4>>(gridNumRows, gridNumCols);
     log->info("... Done allocating GPU memory for focus grid");
+
+    log->info("Allocating GPU memory for focused scene ...");
+    imageGpu =
+        std::make_unique<GpuPitchedArray<float2>>(gridNumRows, gridNumCols);
+    log->info("... Done allocating GPU memory for focused scene");
 }
 
 void TdcProcessor::initGpuData()
@@ -128,4 +133,9 @@ void TdcProcessor::initGpuData()
     focusGridGpu->hostToDevice(reinterpret_cast<const float4 *>(focusGrid),
                                gridNumCols * sizeof(float4));
     log->info("... Done transferring focus grid to the GPU");
+
+    log->info("Initializing focused image to zeros ...");
+    cudaError_t err = cudaMemset2D(imageGpu->ptr(), imageGpu->pitch(), 0,
+                                   gridNumCols, gridNumRows);
+    log->info("... Done initializing focused image");
 }

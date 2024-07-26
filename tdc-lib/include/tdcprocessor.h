@@ -132,6 +132,7 @@ private:
     std::unique_ptr<GpuPitchedArray<float4>> positionGpu;
     std::unique_ptr<GpuPitchedArray<float4>> attitudeGpu;
     std::unique_ptr<GpuPitchedArray<float4>> focusGridGpu;
+    std::unique_ptr<GpuPitchedArray<float2>> imageGpu;
 
     /* Logging */
     std::vector<spdlog::sink_ptr> sinkList;
