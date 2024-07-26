@@ -1,5 +1,5 @@
-#ifndef GPUARRAY_H
-#define GPUARRAY_H
+#ifndef GPUPITCHEDARRAY_H
+#define GPUPITCHEDARRAY_H
 
 /* Standard library headers */
 #include <cstddef>
@@ -13,21 +13,24 @@
 #include <fmt/core.h>
 
 /**
- * RAII class for managing memory allocated on the GPU
+ * RAII class for managing 2D arrays allocated on the GPU
  */
 template <typename T>
-class GpuArray
+class GpuPitchedArray
 {
 public:
     /**
-     * Construct a new GpuArray object and allocate the required space on
+     * Construct a new GpuPitchedArray object and allocate the required space on
      * the GPU.
      */
-    GpuArray(size_t arraySize)
+    GpuPitchedArray(size_t numRows, size_t numCols)
     {
-        this->arraySize = arraySize;
+        this->numRows = numRows;
+        this->numCols = numCols;
+
         void *gpuMem = nullptr;
-        cudaError_t err = cudaMalloc(&gpuMem, arraySize);
+        cudaError_t err =
+            cudaMallocPitch(&gpuMem, &arrayPitch, numCols, numRows);
         if (err != cudaSuccess) {
             throw std::runtime_error(
                 fmt::format("Failed to allocate array on the GPU: {}",
@@ -40,36 +43,42 @@ public:
     /**
      * Free the memory on the GPU.
      */
-    ~GpuArray() { cudaFree(array); }
+    ~GpuPitchedArray() { cudaFree(array); }
 
     /**
      * Delete the copy constructor
      */
-    GpuArray(const GpuArray& other) = delete;
+    GpuPitchedArray(const GpuPitchedArray &other) = delete;
 
     /**
      * Delete the copy-assignment constructor
      */
-    GpuArray& operator=(const GpuArray& other) = delete;
+    GpuPitchedArray &operator=(const GpuPitchedArray &other) = delete;
 
     /**
      * Use the default move constructor
      */
-    GpuArray(GpuArray&& other) = default;
+    GpuPitchedArray(GpuPitchedArray &&other) = default;
 
     /**
      * Use the default move-assignment constructor
      */
-    GpuArray& operator=(GpuArray&& other) = default;
+    GpuPitchedArray &operator=(GpuPitchedArray &&other) = default;
+
+    /**
+     * Returns the pitch of the array on the GPU
+     */
+    size_t pitch() const { return arrayPitch; }
 
     /**
      * Copy data in hostArray to the device. Size of hostArray must be large
      * enough (no checks are performed).
      */
-    void hostToDevice(T const *hostArray)
+    void hostToDevice(T const *hostArray, size_t hostPitch)
     {
-        cudaError_t err = cudaMemcpy(array, hostArray, arraySize * sizeof(T),
-                                     cudaMemcpyHostToDevice);
+        cudaError_t err =
+            cudaMemcpy2D(array, arrayPitch, hostArray, hostPitch, numCols,
+                         numRows, cudaMemcpyHostToDevice);
         if (err != cudaSuccess) {
             throw std::runtime_error(
                 fmt::format("Failed to copy memory to device: {}",
@@ -82,10 +91,11 @@ public:
      * hostArray. Size of hostArray must be large enough (no checks are
      * performed).
      */
-    void deviceToHost(T *hostArray) const
+    void deviceToHost(T *hostArray, size_t hostPitch) const
     {
-        cudaError_t err = cudaMemcpy(hostArray, array, arraySize * sizeof(T),
-                                     cudaMemcpyDeviceToHost);
+        cudaError_t err =
+            cudaMemcpy2D(hostArray, hostPitch, array, arrayPitch, numCols,
+                         numRows, cudaMemcpyDeviceToHost);
         if (err != cudaSuccess) {
             throw std::runtime_error(fmt::format(
                 "Failed to copy memory to host: {}", cudaGetErrorString(err)));
@@ -94,7 +104,9 @@ public:
 
 private:
     T *array;
-    size_t arraySize;
+    size_t numRows;
+    size_t numCols;
+    size_t arrayPitch;
 };
 
-#endif // GPUARRAY_H
+#endif // GPUPITCHEDARRAY_H
