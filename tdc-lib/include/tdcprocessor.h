@@ -6,10 +6,13 @@
 #include <memory>
 #include <vector>
 
+#include <vector_types.h>
+
 /* 3rd party headers */
 #include <spdlog/common.h>
-#include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
+#include <spdlog/spdlog.h>
+
 
 /* Project headers */
 #include "gpuarray.h"
@@ -54,14 +57,18 @@ public:
      * Arguments:
      * -----------
      * rawData: Pointer to a 2D array of raw IQ data
-     *          - Shape is nPri x nSamples.
+     *          - Shape is nPri x nSamples x float[2].
      *          - Stored row-wise.
      * priTimes: Pointer to a 1D array containing the start time of each PRI.
-                 - Shape is nPri.
+                 - Shape is nPri
+     * sampleTimes: Pointer to a 1D array containing the time of each sample
+     *              relative to the start of the PRI.
+     *              - Shape is nSamples
      * position: Pointer to a 3D array array of radar phase center positions
-     *           - Shape is nPri x nSamples x 3
-     *           - Last dimension is ordered (x, y, z)
+     *           - Shape is nPri x nSamples x 4
+     *           - Last dimension is ordered (x, y, z, 0)
      *           - Stored row-wise
+     *           - Last element of each value is 0 for GPU performance
      * attitude: Pointer to a 3D array of radar attitude values
      *           - Orientation represented as a quaternion rotation from body
      *             coordinate system to the local coordinate system
@@ -74,8 +81,9 @@ public:
      * sampleRate: The data sample rate in Hz.
      */
     void setRawData(std::complex<float> const *rawData, float const *priTimes,
-                    float const *position, float const *attitude, int nPri,
-                    int nSamples, float modRate, float sampleRate);
+                    float const *sampleTimes, float const *position,
+                    float const *attitude, int nPri, int nSamples,
+                    float modRate, float sampleRate);
 
     /**
      * Configures the focus grid. This needs to be called before start().
@@ -98,6 +106,7 @@ private:
     /* Raw data fields */
     std::complex<float> const *rawData = nullptr;
     float const *priTimes = nullptr;
+    float const *sampleTimes = nullptr;
     int nPri = 0;
     int nSamples = 0;
     float modRate = 0.0;

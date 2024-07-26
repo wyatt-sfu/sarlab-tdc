@@ -15,5 +15,6 @@ PYBIND11_MODULE(sarlabtdc, m)
     py::class_<TdcProcessorWrapper>(m, "TdcProcessor")
         .def(py::init<int>())
         .def("start", &TdcProcessorWrapper::start)
-        .def("setRawData", &TdcProcessorWrapper::setRawData);
+        .def("setRawData", &TdcProcessorWrapper::setRawData)
+        .def("setFocusGrid", &TdcProcessorWrapper::setFocusGrid);
 }

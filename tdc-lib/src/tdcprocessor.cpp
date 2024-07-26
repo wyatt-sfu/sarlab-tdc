@@ -36,18 +36,19 @@ TdcProcessor::TdcProcessor(int gpuNum)
 void TdcProcessor::start()
 {
     log->info("Starting the TDC processor");
-
-    // Allocate memory on the GPU
-    focusGridGpu = std::make_unique<GpuArray<float>>(gridNumRows * gridNumCols);
 }
 
 void TdcProcessor::setRawData(std::complex<float> const *rawData,
-                              float const *priTimes, float const *position,
-                              float const *attitude, int nPri, int nSamples,
-                              float modRate, float sampleRate)
+                              float const *priTimes, float const *sampleTimes,
+                              float const *position, float const *attitude,
+                              int nPri, int nSamples, float modRate,
+                              float sampleRate)
 {
+    log->info("Setting raw data with {} PRIs and {} samples/PRI", nPri,
+              nSamples);
     this->rawData = rawData;
     this->priTimes = priTimes;
+    this->sampleTimes = sampleTimes;
     this->position = position;
     this->attitude = attitude;
     this->nPri = nPri;
@@ -58,7 +59,7 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData,
 
 void TdcProcessor::setFocusGrid(float const *focusGrid, int nRows, int nCols)
 {
-    log->info("Configure the grid with size {} x {}", nRows, nCols);
+    log->info("Configure the grid with shape {} x {}", nRows, nCols);
     this->focusGrid = focusGrid;
     gridNumRows = nRows;
     gridNumCols = nCols;

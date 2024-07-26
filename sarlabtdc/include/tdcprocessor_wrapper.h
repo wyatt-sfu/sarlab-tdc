@@ -26,6 +26,7 @@ public:
     void setRawData(
         py::array_t<std::complex<float>, py::array::c_style> rawData,
         py::array_t<float, py::array::c_style> priTimes,
+        py::array_t<float, py::array::c_style> sampleTimes,
         py::array_t<float, py::array::c_style> position,
         py::array_t<float, py::array::c_style> attitude, float modRate,
         float sampleRate);
