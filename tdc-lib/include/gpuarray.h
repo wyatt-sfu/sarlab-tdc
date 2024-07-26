@@ -27,7 +27,7 @@ public:
     {
         this->arraySize = arraySize;
         void *gpuMem = nullptr;
-        cudaError_t err = cudaMalloc(&gpuMem, arraySize);
+        cudaError_t err = cudaMalloc(&gpuMem, arraySize * sizeof(T));
         if (err != cudaSuccess) {
             throw std::runtime_error(
                 fmt::format("Failed to allocate array on the GPU: {}",
