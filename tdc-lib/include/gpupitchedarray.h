@@ -30,7 +30,7 @@ public:
 
         void *gpuMem = nullptr;
         cudaError_t err =
-            cudaMallocPitch(&gpuMem, &arrayPitch, numCols, numRows);
+            cudaMallocPitch(&gpuMem, &arrayPitch, numCols * sizeof(T), numRows);
         if (err != cudaSuccess) {
             throw std::runtime_error(
                 fmt::format("Failed to allocate array on the GPU: {}",
@@ -77,8 +77,8 @@ public:
     void hostToDevice(T const *hostArray, size_t hostPitch)
     {
         cudaError_t err =
-            cudaMemcpy2D(array, arrayPitch, hostArray, hostPitch, numCols,
-                         numRows, cudaMemcpyHostToDevice);
+            cudaMemcpy2D(array, arrayPitch, hostArray, hostPitch,
+                         numCols * sizeof(T), numRows, cudaMemcpyHostToDevice);
         if (err != cudaSuccess) {
             throw std::runtime_error(
                 fmt::format("Failed to copy memory to device: {}",
@@ -94,8 +94,8 @@ public:
     void deviceToHost(T *hostArray, size_t hostPitch) const
     {
         cudaError_t err =
-            cudaMemcpy2D(hostArray, hostPitch, array, arrayPitch, numCols,
-                         numRows, cudaMemcpyDeviceToHost);
+            cudaMemcpy2D(hostArray, hostPitch, array, arrayPitch,
+                         numCols * sizeof(T), numRows, cudaMemcpyDeviceToHost);
         if (err != cudaSuccess) {
             throw std::runtime_error(fmt::format(
                 "Failed to copy memory to host: {}", cudaGetErrorString(err)));
