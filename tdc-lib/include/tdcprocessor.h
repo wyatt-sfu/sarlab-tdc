@@ -13,9 +13,9 @@
 #include <spdlog/logger.h>
 #include <spdlog/spdlog.h>
 
-
 /* Project headers */
 #include "gpuarray.h"
+#include "gpupitchedarray.h"
 
 /**
  * Time-domain correlation SAR processor.
@@ -103,6 +103,8 @@ public:
 private:
     /* Methods */
     void initLogging();
+    void allocateGpuMemory();
+    void initGpuData();
 
     /* Raw data fields */
     std::complex<float> const *rawData = nullptr;
@@ -123,7 +125,12 @@ private:
     int gridNumCols = 0;
 
     /* GPU data structures */
-    std::unique_ptr<GpuArray<float>> focusGridGpu;
+    std::unique_ptr<GpuPitchedArray<float2>> rawDataGpu;
+    std::unique_ptr<GpuArray<float>> priTimesGpu;
+    std::unique_ptr<GpuArray<float>> sampleTimesGpu;
+    std::unique_ptr<GpuPitchedArray<float4>> positionGpu;
+    std::unique_ptr<GpuPitchedArray<float4>> attitudeGpu;
+    std::unique_ptr<GpuPitchedArray<float4>> focusGridGpu;
 
     /* Logging */
     std::vector<spdlog::sink_ptr> sinkList;

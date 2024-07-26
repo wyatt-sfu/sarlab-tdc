@@ -72,7 +72,7 @@ public:
 
     /**
      * Copy data in hostArray to the device. Size of hostArray must be large
-     * enough (no checks are performed).
+     * enough (no checks are performed). The hostPitch is specified in bytes.
      */
     void hostToDevice(T const *hostArray, size_t hostPitch)
     {
@@ -89,7 +89,7 @@ public:
     /**
      * Copy data from the array on the GPU to the block of memory pointed to by
      * hostArray. Size of hostArray must be large enough (no checks are
-     * performed).
+     * performed). The hostPitch is specified in bytes.
      */
     void deviceToHost(T *hostArray, size_t hostPitch) const
     {
