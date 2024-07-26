@@ -91,9 +91,10 @@ public:
      * Arguments:
      * ------------
      * focusGrid: Pointer to a 3D array containing focus grid locations
-     *            - Shape is nRows x nCols x 3
-     *            - Last dimension is ordered (x, y, z)
+     *            - Shape is nRows x nCols x 4
+     *            - Last dimension is ordered (x, y, z, 0)
      *            - Stored row-wise
+     *            - Last element of each value is 0 for GPU performance
      * nRows: Number of rows in the focus grid
      * nCols: Number of columns in the focus grid
      */

@@ -27,7 +27,7 @@ void TdcProcessorWrapper::setRawData(
     auto attInfo = attitude.request();
 
     // Check array dimensions
-    if (dataInfo.ndim != 2) {
+    if (dataInfo.ndim != 3) {
         throw std::runtime_error("rawData must be 2D");
     }
 
@@ -51,7 +51,11 @@ void TdcProcessorWrapper::setRawData(
     int nPri = dataInfo.shape[0];
     int nSamples = dataInfo.shape[1];
 
-    // Check the shapes of the other arrays
+    // Check the shapes of the arrays
+    if (dataInfo.shape[2] != 2) {
+        throw std::runtime_error("dataInfo shape is incorrect");
+    }
+
     if (priTimeInfo.shape[0] != nPri) {
         throw std::runtime_error("priTimes shape is incorrect");
     }
@@ -61,12 +65,12 @@ void TdcProcessorWrapper::setRawData(
     }
 
     if (posInfo.shape[0] != nPri || posInfo.shape[1] != nSamples
-        || posInfo.shape[2] != 3) {
+        || posInfo.shape[2] != 4) {
         throw std::runtime_error("position shape is incorrect");
     }
 
     if (attInfo.shape[0] != nPri || attInfo.shape[1] != nSamples
-        || attInfo.shape[2] != 3) {
+        || attInfo.shape[2] != 4) {
         throw std::runtime_error("attitude shape is incorrect");
     }
 
@@ -95,7 +99,7 @@ void TdcProcessorWrapper::setFocusGrid(
     int numCols = gridInfo.shape[1];
 
     // Check the array shape
-    if (gridInfo.shape[2] != 3) {
+    if (gridInfo.shape[2] != 4) {
         throw std::runtime_error("focusGrid shape is incorrect");
     }
 
