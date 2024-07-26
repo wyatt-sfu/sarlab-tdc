@@ -45,22 +45,27 @@ public:
     /**
      * Delete the copy constructor
      */
-    GpuArray(const GpuArray& other) = delete;
+    GpuArray(const GpuArray &other) = delete;
 
     /**
      * Delete the copy-assignment constructor
      */
-    GpuArray& operator=(const GpuArray& other) = delete;
+    GpuArray &operator=(const GpuArray &other) = delete;
 
     /**
      * Use the default move constructor
      */
-    GpuArray(GpuArray&& other) = default;
+    GpuArray(GpuArray &&other) = default;
 
     /**
      * Use the default move-assignment constructor
      */
-    GpuArray& operator=(GpuArray&& other) = default;
+    GpuArray &operator=(GpuArray &&other) = default;
+
+    /**
+     * Returns the underlying device pointer
+     */
+    T *ptr() const { return array; }
 
     /**
      * Copy data in hostArray to the device. Size of hostArray must be large

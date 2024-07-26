@@ -71,6 +71,11 @@ public:
     size_t pitch() const { return arrayPitch; }
 
     /**
+     * Returns the underlying device pointer
+     */
+    T *ptr() const { return array; }
+
+    /**
      * Copy data in hostArray to the device. Size of hostArray must be large
      * enough (no checks are performed). The hostPitch is specified in bytes.
      */

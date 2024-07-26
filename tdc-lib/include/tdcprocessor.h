@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 
+/* CUDA headers */
 #include <vector_types.h>
 
 /* 3rd party headers */
