@@ -78,12 +78,12 @@ public:
      * nPri: Number of PRIs in raw data.
      * nSamples: Number of samples per PRI.
      * modRate: The modulation rate in Hz/s.
-     * sampleRate: The data sample rate in Hz.
+     * startFreq: Start frequency of the linear FMCW chirp in Hz.
      */
     void setRawData(std::complex<float> const *rawData, float const *priTimes,
                     float const *sampleTimes, float const *position,
                     float const *attitude, int nPri, int nSamples,
-                    float modRate, float sampleRate);
+                    float modRate, float startFreq);
 
     /**
      * Configures the focus grid. This needs to be called before start().
@@ -113,7 +113,7 @@ private:
     int nPri = 0;
     int nSamples = 0;
     float modRate = 0.0;
-    float sampleRate = 0.0;
+    float startFreq = 0.0;
 
     /* Radar position fields */
     float const *position = nullptr;

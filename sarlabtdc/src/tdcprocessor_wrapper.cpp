@@ -17,7 +17,7 @@ void TdcProcessorWrapper::setRawData(
     py::array_t<float, py::array::c_style> sampleTimes,
     py::array_t<float, py::array::c_style> position,
     py::array_t<float, py::array::c_style> attitude, float modRate,
-    float sampleRate)
+    float startFreq)
 {
     // Get array info structures
     auto dataInfo = rawData.request();
@@ -27,7 +27,7 @@ void TdcProcessorWrapper::setRawData(
     auto attInfo = attitude.request();
 
     // Check array dimensions
-    if (dataInfo.ndim != 3) {
+    if (dataInfo.ndim != 2) {
         throw std::runtime_error("rawData must be 2D");
     }
 
@@ -52,10 +52,6 @@ void TdcProcessorWrapper::setRawData(
     int nSamples = dataInfo.shape[1];
 
     // Check the shapes of the arrays
-    if (dataInfo.shape[2] != 2) {
-        throw std::runtime_error("dataInfo shape is incorrect");
-    }
-
     if (priTimeInfo.shape[0] != nPri) {
         throw std::runtime_error("priTimes shape is incorrect");
     }
@@ -83,7 +79,7 @@ void TdcProcessorWrapper::setRawData(
 
     // Call the underlying C++ function
     tdcProc->setRawData(dataPtr, priTimePtr, sampleTimePtr, posPtr, attPtr, nPri, nSamples,
-                        modRate, sampleRate);
+                        modRate, startFreq);
 }
 
 void TdcProcessorWrapper::setFocusGrid(

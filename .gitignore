@@ -3,6 +3,9 @@
 **/.cache/**
 *.egg-info
 
+# Python
+*.pyd
+
 # Prerequisites
 *.d
 

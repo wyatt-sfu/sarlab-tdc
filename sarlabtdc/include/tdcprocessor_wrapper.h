@@ -29,7 +29,7 @@ public:
         py::array_t<float, py::array::c_style> sampleTimes,
         py::array_t<float, py::array::c_style> position,
         py::array_t<float, py::array::c_style> attitude, float modRate,
-        float sampleRate);
+        float startFreq);
     void setFocusGrid(py::array_t<float, py::array::c_style> focusGrid);
 
 private:

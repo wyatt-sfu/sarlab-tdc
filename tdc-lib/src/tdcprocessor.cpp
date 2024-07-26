@@ -1,5 +1,4 @@
 /* Standard library headers */
-#include <chrono>
 #include <complex>
 #include <memory>
 #include <stdexcept>
@@ -45,7 +44,7 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData,
                               float const *priTimes, float const *sampleTimes,
                               float const *position, float const *attitude,
                               int nPri, int nSamples, float modRate,
-                              float sampleRate)
+                              float startFreq)
 {
     log->info("Setting raw data with {} PRIs and {} samples/PRI", nPri,
               nSamples);
@@ -57,7 +56,7 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData,
     this->nPri = nPri;
     this->nSamples = nSamples;
     this->modRate = modRate;
-    this->sampleRate = sampleRate;
+    this->startFreq = startFreq;
 }
 
 void TdcProcessor::setFocusGrid(float const *focusGrid, int nRows, int nCols)
@@ -85,9 +84,8 @@ void TdcProcessor::initLogging()
 
     spdlog::set_default_logger(defaultLogger);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] %v");
-    spdlog::flush_every(std::chrono::seconds(2));
-
     spdlog::set_level(spdlog::level::debug);
+    tdcLogger->flush_on(spdlog::level::info);
     tdcLogger->info("Completed logging setup");
 }
 
