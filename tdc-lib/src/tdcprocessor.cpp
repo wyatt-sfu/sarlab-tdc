@@ -17,6 +17,7 @@
 /* Project headers */
 #include "gpuarray.h"
 #include "gpupitchedarray.h"
+#include "tdckernels.cuh"
 
 /* Class header */
 #include "tdcprocessor.h"
@@ -92,14 +93,17 @@ void TdcProcessor::initLogging()
 void TdcProcessor::allocateGpuMemory()
 {
     log->info("Allocating GPU memory for raw data ...");
-    rawDataGpu = std::make_unique<GpuPitchedArray<float2>>(nPri, nSamples);
-    priTimesGpu = std::make_unique<GpuArray<float>>(nPri);
+    rawDataGpu =
+        std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+    priTimesGpu = std::make_unique<GpuArray<float>>(PRI_CHUNKSIZE);
     sampleTimesGpu = std::make_unique<GpuArray<float>>(nSamples);
     log->info("... Done allocating GPU memory for raw data");
 
     log->info("Allocating GPU memory for position data ...");
-    positionGpu = std::make_unique<GpuPitchedArray<float4>>(nPri, nSamples);
-    attitudeGpu = std::make_unique<GpuPitchedArray<float4>>(nPri, nSamples);
+    positionGpu =
+        std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
+    attitudeGpu =
+        std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
     log->info("... Done allocating GPU memory for position data");
 
     log->info("Allocating GPU memory for focus grid ...");
@@ -115,19 +119,10 @@ void TdcProcessor::allocateGpuMemory()
 
 void TdcProcessor::initGpuData()
 {
-    log->info("Transferring raw data to the GPU ...");
-    rawDataGpu->hostToDevice(reinterpret_cast<const float2 *>(rawData),
-                             nSamples * sizeof(float2));
+    log->info("Transferring timing data to the GPU ...");
     priTimesGpu->hostToDevice(priTimes);
     sampleTimesGpu->hostToDevice(sampleTimes);
     log->info("... Done transferring raw data to the GPU");
-
-    log->info("Transferring position data to the GPU");
-    positionGpu->hostToDevice(reinterpret_cast<const float4 *>(position),
-                              nSamples * sizeof(float4));
-    attitudeGpu->hostToDevice(reinterpret_cast<const float4 *>(attitude),
-                              nSamples * sizeof(float4));
-    log->info("... Done transferring position data to the GPU");
 
     log->info("Transferring focus grid to the GPU");
     focusGridGpu->hostToDevice(reinterpret_cast<const float4 *>(focusGrid),

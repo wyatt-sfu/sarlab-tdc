@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(tdc-lib VERSION 1.0.0 LANGUAGES CXX CUDA)
 
-find_package(CUDAToolkit)
+# https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html
+find_package(CUDAToolkit REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
