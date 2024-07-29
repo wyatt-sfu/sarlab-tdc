@@ -84,6 +84,24 @@ public:
     }
 
     /**
+     * Asynchronously copies data in hostArray to the device. The size of
+     * hostArray must be large enough (no checks are performed), AND
+     * hostArray must be allocated from page locked memory using cudaMallocHost.
+     * This function will return before the transfer is complete.
+     */
+    void hostToDeviceAsync(T const *hostArray, cudaStream_t stream)
+    {
+        cudaError_t err =
+            cudaMemcpyAsync(array, hostArray, arraySize * sizeof(T),
+                            cudaMemcpyHostToDevice, stream);
+        if (err != cudaSuccess) {
+            throw std::runtime_error(
+                fmt::format("Failed to copy memory to device: {}",
+                            cudaGetErrorString(err)));
+        }
+    }
+
+    /**
      * Copy data from the array on the GPU to the block of memory pointed to by
      * hostArray. Size of hostArray must be large enough (no checks are
      * performed).
@@ -92,6 +110,24 @@ public:
     {
         cudaError_t err = cudaMemcpy(hostArray, array, arraySize * sizeof(T),
                                      cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            throw std::runtime_error(fmt::format(
+                "Failed to copy memory to host: {}", cudaGetErrorString(err)));
+        }
+    }
+
+    /**
+     * Asynchronously copies data from the array on the GPU to the block of
+     * memory pointed to by hostArray. The size of hostArray must be large
+     * enough (no checks are performed), AND hostArray must be allocated from
+     * page locked memory using cudaMallocHost. This function will return
+     * before the transfer is complete.
+     */
+    void deviceToHostAsync(T *hostArray, cudaStream_t stream) const
+    {
+        cudaError_t err =
+            cudaMemcpyAsync(hostArray, array, arraySize * sizeof(T),
+                            cudaMemcpyDeviceToHost, stream);
         if (err != cudaSuccess) {
             throw std::runtime_error(fmt::format(
                 "Failed to copy memory to host: {}", cudaGetErrorString(err)));
@@ -108,6 +144,5 @@ private:
  */
 template <typename T>
 using GpuArrayPtr = std::unique_ptr<GpuArray<T>>;
-
 
 #endif // GPUARRAY_H
