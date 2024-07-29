@@ -15,6 +15,7 @@
 #include <spdlog/spdlog.h>
 
 /* Project headers */
+#include "cudastream.h"
 #include "gpuarray.h"
 #include "gpupitchedarray.h"
 #include "tdckernels.cuh"
@@ -28,9 +29,16 @@ TdcProcessor::TdcProcessor(int gpuNum)
     log = spdlog::get("TDCPROC");
 
     // Initialize the GPU
+    log->info("Initializing GPU {}", gpuNum);
     cudaError_t err = cudaSetDevice(gpuNum);
     if (err != cudaSuccess) {
         throw std::runtime_error(cudaGetErrorString(err));
+    }
+
+    // Create the stream objects for concurrency
+    log->info("Creating CUDA streams");
+    for (int i = 0; i < NUM_STREAMS; ++i) {
+        streams[i] = std::make_unique<CudaStream>();
     }
 }
 

@@ -2,6 +2,7 @@
 #define TDCPROCESSOR_H
 
 /* Standard library headers */
+#include <array>
 #include <complex>
 #include <memory>
 #include <vector>
@@ -15,8 +16,10 @@
 #include <spdlog/spdlog.h>
 
 /* Project headers */
+#include "cudastream.h"
 #include "gpuarray.h"
 #include "gpupitchedarray.h"
+#include "tdckernels.cuh"
 
 /**
  * Time-domain correlation SAR processor.
@@ -126,6 +129,7 @@ private:
     int gridNumCols = 0;
 
     /* GPU data structures */
+    std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams = {nullptr};
     std::unique_ptr<GpuPitchedArray<float2>> rawDataGpu;
     std::unique_ptr<GpuArray<float>> priTimesGpu;
     std::unique_ptr<GpuArray<float>> sampleTimesGpu;
