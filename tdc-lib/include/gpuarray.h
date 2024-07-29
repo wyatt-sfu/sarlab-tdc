@@ -3,6 +3,7 @@
 
 /* Standard library headers */
 #include <cstddef>
+#include <memory>
 #include <stdexcept>
 
 /* CUDA headers */
@@ -101,5 +102,12 @@ private:
     T *array;
     size_t arraySize;
 };
+
+/**
+ * Type aliases for more compact naming
+ */
+template <typename T>
+using GpuArrayPtr = std::unique_ptr<GpuArray<T>>;
+
 
 #endif // GPUARRAY_H

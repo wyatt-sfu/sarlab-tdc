@@ -126,20 +126,20 @@ void TdcProcessor::initLogging()
 void TdcProcessor::allocateGpuMemory()
 {
     log->info("Allocating GPU memory for raw data ...");
-    rawDataGpu =
-        std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
-    windowGpu =
-        std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+    for (int i = 0; i < NUM_STREAMS; ++i) {
+        rawDataGpu[i] =
+            std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+        windowGpu[i] =
+            std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+        positionGpu[i] =
+            std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
+        attitudeGpu[i] =
+            std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
+    }
+
     priTimesGpu = std::make_unique<GpuArray<float>>(PRI_CHUNKSIZE);
     sampleTimesGpu = std::make_unique<GpuArray<float>>(nSamples);
     log->info("... Done allocating GPU memory for raw data");
-
-    log->info("Allocating GPU memory for position data ...");
-    positionGpu =
-        std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
-    attitudeGpu =
-        std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
-    log->info("... Done allocating GPU memory for position data");
 
     log->info("Allocating GPU memory for focus grid ...");
     focusGridGpu =

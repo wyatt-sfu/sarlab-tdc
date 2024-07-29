@@ -3,6 +3,7 @@
 
 /* Standard library headers */
 #include <cstddef>
+#include <memory>
 #include <stdexcept>
 
 /* CUDA headers */
@@ -113,5 +114,11 @@ private:
     size_t numCols;
     size_t arrayPitch;
 };
+
+/**
+ * Type aliases for more compact naming
+ */
+template <typename T>
+using GpuPitchedArrayPtr = std::unique_ptr<GpuPitchedArray<T>>;
 
 #endif // GPUPITCHEDARRAY_H

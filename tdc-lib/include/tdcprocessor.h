@@ -139,14 +139,14 @@ private:
 
     /* GPU data structures */
     std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams;
-    std::unique_ptr<GpuPitchedArray<float2>> rawDataGpu;
-    std::unique_ptr<GpuPitchedArray<float2>> windowGpu;
-    std::unique_ptr<GpuArray<float>> priTimesGpu;
-    std::unique_ptr<GpuArray<float>> sampleTimesGpu;
-    std::unique_ptr<GpuPitchedArray<float4>> positionGpu;
-    std::unique_ptr<GpuPitchedArray<float4>> attitudeGpu;
-    std::unique_ptr<GpuPitchedArray<float4>> focusGridGpu;
-    std::unique_ptr<GpuPitchedArray<float2>> imageGpu;
+    std::array<GpuPitchedArrayPtr<float2>, NUM_STREAMS> rawDataGpu;
+    std::array<GpuPitchedArrayPtr<float2>, NUM_STREAMS> windowGpu;
+    std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> positionGpu;
+    std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> attitudeGpu;
+    GpuArrayPtr<float> priTimesGpu;
+    GpuArrayPtr<float> sampleTimesGpu;
+    GpuPitchedArrayPtr<float4> focusGridGpu;
+    GpuPitchedArrayPtr<float2> imageGpu;
 
     /* Logging */
     std::vector<spdlog::sink_ptr> sinkList;
