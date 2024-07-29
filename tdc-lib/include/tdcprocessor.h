@@ -138,7 +138,7 @@ private:
     std::unique_ptr<PageLockedHost> attitudeStaging;
 
     /* GPU data structures */
-    std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams = {nullptr};
+    std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams;
     std::unique_ptr<GpuPitchedArray<float2>> rawDataGpu;
     std::unique_ptr<GpuPitchedArray<float2>> windowGpu;
     std::unique_ptr<GpuArray<float>> priTimesGpu;

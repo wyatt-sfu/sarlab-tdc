@@ -55,7 +55,7 @@ void TdcProcessor::start()
     allocateHostMemory();
     initGpuData();
 
-    nChunks = std::max(nPri / PRI_CHUNKSIZE, 1);
+    nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
     for (int i = 0; i < nChunks; ++i) {
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
@@ -186,7 +186,7 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
     // Transfer the next chunk of data into the staging area in page locked
     // memory. This is so that we can concurrently transfer data to the GPU
     // while processing is occuring.
-    int priIndex = chunkIdx * PRI_CHUNKSIZE;
+    size_t priIndex = chunkIdx * PRI_CHUNKSIZE;
     size_t stagingSizeData = PRI_CHUNKSIZE * nSamples * sizeof(float2);
     size_t stagingSizePos = PRI_CHUNKSIZE * nSamples * sizeof(float4);
 
