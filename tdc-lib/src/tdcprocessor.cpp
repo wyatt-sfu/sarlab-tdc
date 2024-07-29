@@ -56,7 +56,13 @@ void TdcProcessor::start()
     initGpuData();
 
     nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
+    size_t streamIdx = 0;
+
+    // Before starting the loop we need to transfer the data for the first chunk
+    transferNextChunk(0, streamIdx);
+
     for (int i = 0; i < nChunks; ++i) {
+        streamIdx = i % NUM_STREAMS;
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
             }
@@ -179,6 +185,20 @@ void TdcProcessor::initGpuData()
     cudaError_t err = cudaMemset2D(imageGpu->ptr(), imageGpu->pitch(), 0,
                                    gridNumCols, gridNumRows);
     log->info("... Done initializing focused image");
+}
+
+void TdcProcessor::transferNextChunk(int chunkIdx, size_t streamIdx)
+{
+    stageNextChunk(chunkIdx);
+    rawDataGpu[streamIdx]->hostToDeviceAsync(
+        reinterpret_cast<const float2 *>(rawStaging->ptr()),
+        nSamples * sizeof(float2), streams[streamIdx]->ptr());
+    positionGpu[streamIdx]->hostToDeviceAsync(
+        reinterpret_cast<const float4 *>(posStaging->ptr()),
+        nSamples * sizeof(float4), streams[streamIdx]->ptr());
+    attitudeGpu[streamIdx]->hostToDeviceAsync(
+        reinterpret_cast<const float4 *>(attitudeStaging->ptr()),
+        nSamples * sizeof(float4), streams[streamIdx]->ptr());
 }
 
 void TdcProcessor::stageNextChunk(int chunkIdx)

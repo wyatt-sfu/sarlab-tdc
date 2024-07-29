@@ -4,6 +4,7 @@
 /* Standard library headers */
 #include <array>
 #include <complex>
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -111,6 +112,7 @@ private:
     void allocateGpuMemory();
     void allocateHostMemory();
     void initGpuData();
+    void transferNextChunk(int chunkIdx, size_t streamIdx);
     void stageNextChunk(int chunkIdx);
 
     /* Raw data fields */

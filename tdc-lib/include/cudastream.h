@@ -57,7 +57,7 @@ public:
     /**
      * Returns a pointer to the cudaStream_t
      */
-    cudaStream_t *ptr() { return &stream; }
+    cudaStream_t ptr() { return stream; }
 
 private:
     cudaStream_t stream;
