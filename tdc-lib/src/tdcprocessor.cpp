@@ -1,6 +1,8 @@
 /* Standard library headers */
+#include <algorithm>
 #include <complex>
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 
@@ -52,6 +54,15 @@ void TdcProcessor::start()
     allocateGpuMemory();
     allocateHostMemory();
     initGpuData();
+
+    nChunks = std::max(nPri / PRI_CHUNKSIZE, 1);
+    for (int i = 0; i < nChunks; ++i) {
+        for (int j = 0; j < gridNumRows; ++j) {
+            for (int k = 0; k < gridNumCols; ++k) {
+            }
+        }
+        cudaDeviceSynchronize();
+    }
 }
 
 void TdcProcessor::setRawData(std::complex<float> const *rawData,
@@ -71,6 +82,15 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData,
     this->nSamples = nSamples;
     this->modRate = modRate;
     this->startFreq = startFreq;
+
+    // Error checking
+    if (nPri <= 0) {
+        throw std::invalid_argument("nPri must be greater than 0");
+    }
+
+    if (nSamples <= 0) {
+        throw std::invalid_argument("nSamples must be greater than 0");
+    }
 }
 
 void TdcProcessor::setFocusGrid(float const *focusGrid, int nRows, int nCols)
@@ -159,4 +179,24 @@ void TdcProcessor::initGpuData()
     cudaError_t err = cudaMemset2D(imageGpu->ptr(), imageGpu->pitch(), 0,
                                    gridNumCols, gridNumRows);
     log->info("... Done initializing focused image");
+}
+
+void TdcProcessor::stageNextChunk(int chunkIdx)
+{
+    // Transfer the next chunk of data into the staging area in page locked
+    // memory. This is so that we can concurrently transfer data to the GPU
+    // while processing is occuring.
+    int priIndex = chunkIdx * PRI_CHUNKSIZE;
+    size_t stagingSizeData = PRI_CHUNKSIZE * nSamples * sizeof(float2);
+    size_t stagingSizePos = PRI_CHUNKSIZE * nSamples * sizeof(float4);
+
+    log->info("Staging chunk {} of {}", chunkIdx, nChunks);
+    std::memcpy(rawStaging->ptr(), rawData + (priIndex * nSamples),
+                stagingSizeData);
+    std::memcpy(posStaging->ptr(),
+                rawData + (priIndex * nSamples * sizeof(float4)),
+                stagingSizeData);
+    std::memcpy(attitudeStaging->ptr(),
+                rawData + (priIndex * nSamples * sizeof(float4)),
+                stagingSizeData);
 }

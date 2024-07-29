@@ -111,6 +111,7 @@ private:
     void allocateGpuMemory();
     void allocateHostMemory();
     void initGpuData();
+    void stageNextChunk(int chunkIdx);
 
     /* Raw data fields */
     std::complex<float> const *rawData = nullptr;
@@ -118,6 +119,7 @@ private:
     float const *sampleTimes = nullptr;
     int nPri = 0;
     int nSamples = 0;
+    int nChunks = 0;
     float modRate = 0.0;
     float startFreq = 0.0;
 
