@@ -108,6 +108,8 @@ void TdcProcessor::allocateGpuMemory()
     log->info("Allocating GPU memory for raw data ...");
     rawDataGpu =
         std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+    windowGpu =
+        std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
     priTimesGpu = std::make_unique<GpuArray<float>>(PRI_CHUNKSIZE);
     sampleTimesGpu = std::make_unique<GpuArray<float>>(nSamples);
     log->info("... Done allocating GPU memory for raw data");
