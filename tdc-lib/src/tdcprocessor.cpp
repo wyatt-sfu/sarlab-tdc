@@ -1,5 +1,6 @@
 /* Standard library headers */
 #include <complex>
+#include <cstddef>
 #include <memory>
 #include <stdexcept>
 
@@ -9,6 +10,7 @@
 #include <vector_types.h>
 
 /* 3rd party headers */
+#include <fmt/core.h>
 #include <spdlog/common.h>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -18,6 +20,7 @@
 #include "cudastream.h"
 #include "gpuarray.h"
 #include "gpupitchedarray.h"
+#include "pagelockedhost.h"
 #include "tdckernels.cuh"
 
 /* Class header */
@@ -32,7 +35,8 @@ TdcProcessor::TdcProcessor(int gpuNum)
     log->info("Initializing GPU {}", gpuNum);
     cudaError_t err = cudaSetDevice(gpuNum);
     if (err != cudaSuccess) {
-        throw std::runtime_error(cudaGetErrorString(err));
+        throw std::runtime_error(fmt::format("Failed to set cuda device: {}",
+                                             cudaGetErrorString(err)));
     }
 
     // Create the stream objects for concurrency
@@ -46,6 +50,7 @@ void TdcProcessor::start()
 {
     log->info("Starting the TDC processor");
     allocateGpuMemory();
+    allocateHostMemory();
     initGpuData();
 }
 
@@ -125,12 +130,23 @@ void TdcProcessor::allocateGpuMemory()
     log->info("... Done allocating GPU memory for focused scene");
 }
 
+void TdcProcessor::allocateHostMemory()
+{
+    size_t stagingSizeData = PRI_CHUNKSIZE * nSamples * sizeof(float2);
+    size_t stagingSizePos = PRI_CHUNKSIZE * nSamples * sizeof(float4);
+    log->info("Allocating page locked host memory ...");
+    rawStaging = std::make_unique<PageLockedHost>(stagingSizeData);
+    posStaging = std::make_unique<PageLockedHost>(stagingSizePos);
+    attitudeStaging = std::make_unique<PageLockedHost>(stagingSizePos);
+    log->info("... Done allocating page locked host memory");
+}
+
 void TdcProcessor::initGpuData()
 {
     log->info("Transferring timing data to the GPU ...");
     priTimesGpu->hostToDevice(priTimes);
     sampleTimesGpu->hostToDevice(sampleTimes);
-    log->info("... Done transferring raw data to the GPU");
+    log->info("... Done transferring timing data to the GPU");
 
     log->info("Transferring focus grid to the GPU");
     focusGridGpu->hostToDevice(reinterpret_cast<const float4 *>(focusGrid),

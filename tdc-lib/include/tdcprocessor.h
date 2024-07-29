@@ -19,6 +19,7 @@
 #include "cudastream.h"
 #include "gpuarray.h"
 #include "gpupitchedarray.h"
+#include "pagelockedhost.h"
 #include "tdckernels.cuh"
 
 /**
@@ -108,6 +109,7 @@ private:
     /* Methods */
     void initLogging();
     void allocateGpuMemory();
+    void allocateHostMemory();
     void initGpuData();
 
     /* Raw data fields */
@@ -127,6 +129,11 @@ private:
     float const *focusGrid = nullptr;
     int gridNumRows = 0;
     int gridNumCols = 0;
+
+    /* Staging buffers for transferring data to the GPU */
+    std::unique_ptr<PageLockedHost> rawStaging;
+    std::unique_ptr<PageLockedHost> posStaging;
+    std::unique_ptr<PageLockedHost> attitudeStaging;
 
     /* GPU data structures */
     std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams = {nullptr};
