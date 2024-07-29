@@ -93,6 +93,26 @@ public:
     }
 
     /**
+     * Asynchronously copies data in hostArray to the device. The size of
+     * hostArray must be large enough (no checks are performed), AND
+     * hostArray must be allocated from page locked memory using cudaMallocHost.
+     * The hostPitch is specified in bytes. This function will return before
+     * the transfer is complete.
+     */
+    void hostToDeviceAsync(T const *hostArray, size_t hostPitch,
+                           cudaStream_t stream)
+    {
+        cudaError_t err = cudaMemcpy2DAsync(
+            array, arrayPitch, hostArray, hostPitch, numCols * sizeof(T),
+            numRows, cudaMemcpyHostToDevice, stream);
+        if (err != cudaSuccess) {
+            throw std::runtime_error(
+                fmt::format("Failed to copy memory to device: {}",
+                            cudaGetErrorString(err)));
+        }
+    }
+
+    /**
      * Copy data from the array on the GPU to the block of memory pointed to by
      * hostArray. Size of hostArray must be large enough (no checks are
      * performed). The hostPitch is specified in bytes.
@@ -102,6 +122,25 @@ public:
         cudaError_t err =
             cudaMemcpy2D(hostArray, hostPitch, array, arrayPitch,
                          numCols * sizeof(T), numRows, cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            throw std::runtime_error(fmt::format(
+                "Failed to copy memory to host: {}", cudaGetErrorString(err)));
+        }
+    }
+
+    /**
+     * Asynchronously copies data from the array on the GPU to the block of
+     * memory pointed to by hostArray. The size of hostArray must be large
+     * enough (no checks are performed), AND hostArray must be allocated from
+     * page locked memory using cudaMallocHost. The hostPitch is specified in
+     * bytes. This function will return before the transfer is complete.
+     */
+    void deviceToHostAsync(T *hostArray, size_t hostPitch,
+                           cudaStream_t stream) const
+    {
+        cudaError_t err = cudaMemcpy2DAsync(
+            hostArray, hostPitch, array, arrayPitch, numCols * sizeof(T),
+            numRows, cudaMemcpyDeviceToHost, stream);
         if (err != cudaSuccess) {
             throw std::runtime_error(fmt::format(
                 "Failed to copy memory to host: {}", cudaGetErrorString(err)));
