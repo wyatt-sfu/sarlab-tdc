@@ -2,7 +2,9 @@
 #include <algorithm>
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 
@@ -48,6 +50,11 @@ TdcProcessor::TdcProcessor(int gpuNum)
     }
 }
 
+TdcProcessor::~TdcProcessor()
+{
+    cudaDeviceReset();
+}
+
 void TdcProcessor::start()
 {
     log->info("Starting the TDC processor");
@@ -57,12 +64,22 @@ void TdcProcessor::start()
 
     nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
     size_t streamIdx = 0;
+    size_t nextStreamIdx = 1;
 
     // Before starting the loop we need to transfer the data for the first chunk
     transferNextChunk(0, streamIdx);
+    cudaDeviceSynchronize();
 
+    // Start looping through each chunk of data
     for (int i = 0; i < nChunks; ++i) {
         streamIdx = i % NUM_STREAMS;
+        nextStreamIdx = (i + 1) % NUM_STREAMS;
+
+        // Transfer the next chunk of data while we process the current chunk
+        if (i + 1 < nChunks) {
+            transferNextChunk(i + 1, nextStreamIdx);
+        }
+
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
             }
@@ -143,7 +160,7 @@ void TdcProcessor::allocateGpuMemory()
             std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
     }
 
-    priTimesGpu = std::make_unique<GpuArray<float>>(PRI_CHUNKSIZE);
+    priTimesGpu = std::make_unique<GpuArray<float>>(nPri);
     sampleTimesGpu = std::make_unique<GpuArray<float>>(nSamples);
     log->info("... Done allocating GPU memory for raw data");
 
@@ -183,7 +200,7 @@ void TdcProcessor::initGpuData()
 
     log->info("Initializing focused image to zeros ...");
     cudaError_t err = cudaMemset2D(imageGpu->ptr(), imageGpu->pitch(), 0,
-                                   gridNumCols, gridNumRows);
+                                   gridNumCols * sizeof(float2), gridNumRows);
     log->info("... Done initializing focused image");
 }
 
@@ -210,13 +227,19 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
     size_t stagingSizeData = PRI_CHUNKSIZE * nSamples * sizeof(float2);
     size_t stagingSizePos = PRI_CHUNKSIZE * nSamples * sizeof(float4);
 
-    log->info("Staging chunk {} of {}", chunkIdx, nChunks);
-    std::memcpy(rawStaging->ptr(), rawData + (priIndex * nSamples),
+    const auto *rawPtr = reinterpret_cast<const uint8_t *>(rawData);
+    const auto *posPtr = reinterpret_cast<const uint8_t *>(position);
+    const auto *attPtr = reinterpret_cast<const uint8_t *>(attitude);
+
+    log->info("Staging chunk {} of {}", chunkIdx + 1, nChunks);
+
+    std::memcpy(rawStaging->ptr(),
+                rawPtr + (priIndex * nSamples * sizeof(float2)),
                 stagingSizeData);
     std::memcpy(posStaging->ptr(),
-                rawData + (priIndex * nSamples * sizeof(float4)),
-                stagingSizeData);
+                posPtr + (priIndex * nSamples * sizeof(float4)),
+                stagingSizePos);
     std::memcpy(attitudeStaging->ptr(),
-                rawData + (priIndex * nSamples * sizeof(float4)),
-                stagingSizeData);
+                attPtr + (priIndex * nSamples * sizeof(float4)),
+                stagingSizePos);
 }

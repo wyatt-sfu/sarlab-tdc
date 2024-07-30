@@ -50,6 +50,7 @@ class TdcProcessor
 {
 public:
     TdcProcessor(int gpuNum);
+    ~TdcProcessor();
 
     /**
      * Start the SAR processor. Returns when the processing is complete.

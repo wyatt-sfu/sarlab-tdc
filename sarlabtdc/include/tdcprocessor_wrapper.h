@@ -33,7 +33,15 @@ public:
     void setFocusGrid(py::array_t<float, py::array::c_style> focusGrid);
 
 private:
+    /* Underlying C++ object */
     std::unique_ptr<TdcProcessor> tdcProc;
+
+    /* Numpy arrays (needed to stop Python from garbage collecting) */
+    py::array_t<std::complex<float>, py::array::c_style> rawData;
+    py::array_t<float, py::array::c_style> priTimes;
+    py::array_t<float, py::array::c_style> sampleTimes;
+    py::array_t<float, py::array::c_style> position;
+    py::array_t<float, py::array::c_style> attitude;
 };
 
 #endif // TDCPROCESSOR_WRAPPER_H

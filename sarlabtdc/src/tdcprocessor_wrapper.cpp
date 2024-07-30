@@ -19,6 +19,13 @@ void TdcProcessorWrapper::setRawData(
     py::array_t<float, py::array::c_style> attitude, float modRate,
     float startFreq)
 {
+    // Assign to member variables to prevent Python garbage collection
+    this->rawData = rawData;
+    this->priTimes = priTimes;
+    this->sampleTimes = sampleTimes;
+    this->position = position;
+    this->attitude = attitude;
+
     // Get array info structures
     auto dataInfo = rawData.request();
     auto priTimeInfo = priTimes.request();
@@ -78,8 +85,8 @@ void TdcProcessorWrapper::setRawData(
     auto *attPtr = reinterpret_cast<float const *>(attInfo.ptr);
 
     // Call the underlying C++ function
-    tdcProc->setRawData(dataPtr, priTimePtr, sampleTimePtr, posPtr, attPtr, nPri, nSamples,
-                        modRate, startFreq);
+    tdcProc->setRawData(dataPtr, priTimePtr, sampleTimePtr, posPtr, attPtr,
+                        nPri, nSamples, modRate, startFreq);
 }
 
 void TdcProcessorWrapper::setFocusGrid(
