@@ -11,8 +11,8 @@ find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
 add_library(tdc-lib STATIC
-    src/tdcprocessor.cpp
     src/tdckernels.cu
+    src/tdcprocessor.cpp
 )
 
 target_include_directories(tdc-lib PUBLIC
@@ -23,10 +23,12 @@ target_include_directories(tdc-lib PRIVATE
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
 )
 
-set_target_properties(tdc-lib PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON)
+# This breaks pybind11! No idea why.
+# Unfortunately this means we can't use separable compilation
+# set_target_properties(tdc-lib PROPERTIES
+#     CUDA_SEPARABLE_COMPILATION ON)
 
-target_link_libraries(tdc-lib PRIVATE
+target_link_libraries(tdc-lib PUBLIC
     CUDA::cudart_static
     fmt::fmt
     spdlog::spdlog
