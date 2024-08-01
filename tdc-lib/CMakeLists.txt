@@ -12,6 +12,7 @@ find_package(spdlog CONFIG REQUIRED)
 
 add_library(tdc-lib STATIC
     src/tdcprocessor.cpp
+    src/tdckernels.cu
 )
 
 target_include_directories(tdc-lib PUBLIC

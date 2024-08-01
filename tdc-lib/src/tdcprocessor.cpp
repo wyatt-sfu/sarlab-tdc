@@ -82,6 +82,8 @@ void TdcProcessor::start()
 
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
+                createWindow(windowGpu[streamIdx]->ptr(), i, nPri, nSamples,
+                             streams[streamIdx]->ptr());
             }
         }
         cudaDeviceSynchronize();
@@ -153,7 +155,7 @@ void TdcProcessor::allocateGpuMemory()
         rawDataGpu[i] =
             std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
         windowGpu[i] =
-            std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+            std::make_unique<GpuPitchedArray<float>>(PRI_CHUNKSIZE, nSamples);
         positionGpu[i] =
             std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
         attitudeGpu[i] =
