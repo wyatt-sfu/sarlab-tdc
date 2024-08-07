@@ -33,6 +33,9 @@ public:
     void setFocusGrid(py::array_t<float, py::array::c_style> focusGrid);
 
 private:
+    /* Methods */
+    void setupLogging();
+
     /* Underlying C++ object */
     std::unique_ptr<TdcProcessor> tdcProc;
 

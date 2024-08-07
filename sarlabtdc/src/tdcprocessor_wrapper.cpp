@@ -1,9 +1,19 @@
-#include "tdcprocessor_wrapper.h"
+/* Standard library headers */
+#include <memory>
 #include <stdexcept>
+#include <vector>
+
+/* 3rd party library headers */
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
+/* Class header */
+#include "tdcprocessor_wrapper.h"
 
 TdcProcessorWrapper::TdcProcessorWrapper(int gpuNum)
 {
     tdcProc = std::make_unique<TdcProcessor>(gpuNum);
+    setupLogging();
 }
 
 void TdcProcessorWrapper::start()
@@ -111,4 +121,11 @@ void TdcProcessorWrapper::setFocusGrid(
 
     // Call the underlying C++ function
     tdcProc->setFocusGrid(gridPtr, numRows, numCols);
+}
+
+void TdcProcessorWrapper::setupLogging()
+{
+    auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    std::vector<spdlog::sink_ptr> sinkList = {consoleSink};
+    tdcProc->setLoggerSinks(sinkList);
 }

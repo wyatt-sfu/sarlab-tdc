@@ -14,7 +14,6 @@
 /* 3rd party headers */
 #include <spdlog/common.h>
 #include <spdlog/logger.h>
-#include <spdlog/spdlog.h>
 
 /* Project headers */
 #include "cudastream.h"
@@ -54,6 +53,8 @@ public:
 
     /**
      * Start the SAR processor. Returns when the processing is complete.
+     *
+     * This function should only be called after setRawData and setFocusGrid.
      */
     void start();
 
@@ -107,9 +108,15 @@ public:
      */
     void setFocusGrid(float const *focusGrid, int nRows, int nCols);
 
+    /**
+     * Configures the class to log to the specified sinks.
+     *
+     * Logging is only enabled after this function is called.
+     */
+    void setLoggerSinks(const std::vector<spdlog::sink_ptr> &sinks);
+
 private:
     /* Methods */
-    void initLogging();
     void allocateGpuMemory();
     void allocateHostMemory();
     void initGpuData();
@@ -152,7 +159,6 @@ private:
     GpuPitchedArrayPtr<float2> imageGpu;
 
     /* Logging */
-    std::vector<spdlog::sink_ptr> sinkList;
     std::shared_ptr<spdlog::logger> log;
 };
 

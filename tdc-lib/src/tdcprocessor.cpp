@@ -4,9 +4,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 /* CUDA headers */
 #include <cuda_runtime_api.h>
@@ -15,9 +15,7 @@
 
 /* 3rd party headers */
 #include <fmt/core.h>
-#include <spdlog/common.h>
-#include <spdlog/logger.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
 /* Project headers */
@@ -32,8 +30,8 @@
 
 TdcProcessor::TdcProcessor(int gpuNum)
 {
-    initLogging();
-    log = spdlog::get("TDCPROC");
+    // Initialize with logging to null
+    log = spdlog::null_logger_mt("NULL");
 
     // Initialize the GPU
     log->info("Initializing GPU {}", gpuNum);
@@ -126,26 +124,18 @@ void TdcProcessor::setFocusGrid(float const *focusGrid, int nRows, int nCols)
     gridNumCols = nCols;
 }
 
-void TdcProcessor::initLogging()
+void TdcProcessor::setLoggerSinks(const std::vector<spdlog::sink_ptr> &sinks)
 {
-    auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    sinkList = {consoleSink};
-
-    // Create loggers and register them with spdlog
-    // Registering allows the logger objects to be retrieved with spdlog::get
-    auto defaultLogger = std::make_shared<spdlog::logger>(
-        "DEFAULT", sinkList.begin(), sinkList.end());
-    spdlog::register_logger(defaultLogger);
-
-    auto tdcLogger = std::make_shared<spdlog::logger>(
-        "TDCPROC", sinkList.begin(), sinkList.end());
+    auto tdcLogger =
+        std::make_shared<spdlog::logger>("TDCPROC", sinks.begin(), sinks.end());
     spdlog::register_logger(tdcLogger);
 
-    spdlog::set_default_logger(defaultLogger);
+    spdlog::set_default_logger(tdcLogger);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] %v");
     spdlog::set_level(spdlog::level::debug);
     tdcLogger->flush_on(spdlog::level::info);
     tdcLogger->info("Completed logging setup");
+    log = spdlog::get("TDCPROC");
 }
 
 void TdcProcessor::allocateGpuMemory()
