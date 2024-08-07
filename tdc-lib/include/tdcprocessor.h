@@ -20,7 +20,7 @@
 #include "gpuarray.h"
 #include "gpupitchedarray.h"
 #include "pagelockedhost.h"
-#include "tdckernels.cuh"
+#include "tuning.h"
 
 /**
  * Time-domain correlation SAR processor.

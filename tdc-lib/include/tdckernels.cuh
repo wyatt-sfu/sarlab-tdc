@@ -10,10 +10,6 @@
 #include <driver_types.h>
 #include <vector_types.h>
 
-/* Constants */
-constexpr size_t PRI_CHUNKSIZE = 128;
-constexpr size_t NUM_STREAMS = 2;
-
 /**
  * Create the window array
  */

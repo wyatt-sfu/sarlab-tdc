@@ -6,6 +6,9 @@
 # Python
 *.pyd
 
+# IDE
+**/.vscode/*
+
 # Prerequisites
 *.d
 

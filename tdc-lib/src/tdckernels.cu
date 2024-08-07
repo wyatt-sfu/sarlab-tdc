@@ -1,8 +1,10 @@
 /* CUDA headers */
-#include <cuda_runtime.h>
-#include <device_types.h>
+#include <device_launch_parameters.h>
 #include <driver_types.h>
 #include <vector_types.h>
+
+/* Project headers */
+#include "tuning.h"
 
 /* Class header */
 #include "tdckernels.cuh"
@@ -10,9 +12,10 @@
 void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
                   cudaStream_t stream)
 {
-    dim3 blockSize(8, PRI_CHUNKSIZE, 0);
-    dim3 gridSize((nSamples + blockSize.x - 1) / blockSize.x,
-                  (nPri + blockSize.y - 1) / blockSize.y, 0);
+
+    dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 0);
+    dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
+                        (nPri + blockSize.y - 1) / blockSize.y, 0);
     createWindowKernel<<<gridSize, blockSize, 0, stream>>>(window, chunkIdx,
                                                            nPri, nSamples);
 }
@@ -23,10 +26,9 @@ void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
 __global__ void createWindowKernel(float *window, int chunkIdx, int nPri,
                                    int nSamp)
 {
-    int priWindowIdx = blockIdx.y * blockDim.y + threadIdx.y;
-    int sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
-    int priGlobalIdx =
-        static_cast<int>(chunkIdx * PRI_CHUNKSIZE) + priWindowIdx;
+    unsigned int const priWindowIdx = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priWindowIdx;
     float winVal = 0;
 
     if (priWindowIdx < PRI_CHUNKSIZE && sampleIdx < nSamp) {
