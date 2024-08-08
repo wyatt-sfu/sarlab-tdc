@@ -1,7 +1,8 @@
 {
     "dependencies": [
         "spdlog",
-        "fmt"
+        "fmt",
+        "gtest"
     ],
     "builtin-baseline": "c9919121dde6f61c0436adda94624636e041226b"
 }

@@ -13,3 +13,4 @@ enable_testing()
 # SUBPROJECTS
 # ##############################################################################
 add_subdirectory(tdc-lib)
+add_subdirectory(tdctest)

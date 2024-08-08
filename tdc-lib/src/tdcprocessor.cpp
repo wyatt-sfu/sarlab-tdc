@@ -11,6 +11,7 @@
 /* CUDA headers */
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
+#include <nppcore.h>
 #include <vector_types.h>
 
 /* 3rd party headers */
@@ -23,7 +24,7 @@
 #include "gpuarray.h"
 #include "gpupitchedarray.h"
 #include "pagelockedhost.h"
-#include "tdckernels.cuh"
+#include "tdckernels.h"
 
 /* Class header */
 #include "tdcprocessor.h"
@@ -35,7 +36,7 @@ TdcProcessor::TdcProcessor(int gpuNum)
 
     // Initialize the GPU
     log->info("Initializing GPU {}", gpuNum);
-    cudaError_t err = cudaSetDevice(gpuNum);
+    cudaError_t const err = cudaSetDevice(gpuNum);
     if (err != cudaSuccess) {
         throw std::runtime_error(fmt::format("Failed to set cuda device: {}",
                                              cudaGetErrorString(err)));
@@ -80,8 +81,12 @@ void TdcProcessor::start()
 
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
+                // Create the window array
                 createWindow(windowGpu[streamIdx]->ptr(), i, nPri, nSamples,
                              streams[streamIdx]->ptr());
+
+                // Compute the max value of the window
+                nppSetStream(streams[streamIdx]->ptr());
             }
         }
         cudaDeviceSynchronize();
@@ -216,8 +221,9 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
     // memory. This is so that we can concurrently transfer data to the GPU
     // while processing is occuring.
     size_t priIndex = chunkIdx * PRI_CHUNKSIZE;
-    size_t stagingSizeData = PRI_CHUNKSIZE * nSamples * sizeof(float2);
-    size_t stagingSizePos = PRI_CHUNKSIZE * nSamples * sizeof(float4);
+    size_t prisToStage = std::min(PRI_CHUNKSIZE, nPri - priIndex);
+    size_t stagingSizeData = prisToStage * nSamples * sizeof(float2);
+    size_t stagingSizePos = prisToStage * nSamples * sizeof(float4);
 
     const auto *rawPtr = reinterpret_cast<const uint8_t *>(rawData);
     const auto *posPtr = reinterpret_cast<const uint8_t *>(position);

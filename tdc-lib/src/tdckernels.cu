@@ -7,22 +7,11 @@
 #include "tuning.h"
 
 /* Class header */
-#include "tdckernels.cuh"
+#include "tdckernels.h"
 
-void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
-                  cudaStream_t stream)
-{
+/** Global variable used for storing the maximum of the window array */
+__device__ float windowMaxValue;
 
-    dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 0);
-    dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
-                        (nPri + blockSize.y - 1) / blockSize.y, 0);
-    createWindowKernel<<<gridSize, blockSize, 0, stream>>>(window, chunkIdx,
-                                                           nPri, nSamples);
-}
-
-/**
- * Correlate the raw data with the reference response.
- */
 __global__ void createWindowKernel(float *window, int chunkIdx, int nPri,
                                    int nSamp)
 {
@@ -41,4 +30,14 @@ __global__ void createWindowKernel(float *window, int chunkIdx, int nPri,
     }
 
     window[priWindowIdx * nSamp + sampleIdx] = winVal;
+}
+
+void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
+                  cudaStream_t stream)
+{
+    dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 0);
+    dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
+                        (nPri + blockSize.y - 1) / blockSize.y, 0);
+    createWindowKernel<<<gridSize, blockSize, 0, stream>>>(window, chunkIdx,
+                                                           nPri, nSamples);
 }
