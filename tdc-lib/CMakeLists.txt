@@ -10,8 +10,6 @@ find_package(CUDAToolkit REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
-set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)
-
 add_library(tdc-lib STATIC
     src/tdckernels.cu
     src/tdcprocessor.cpp
@@ -33,6 +31,6 @@ target_include_directories(tdc-lib PRIVATE
 target_link_libraries(tdc-lib PUBLIC
     fmt::fmt
     spdlog::spdlog
-    CUDA::cudart
+    CUDA::cudart_static
     CUDA::nppc
 )

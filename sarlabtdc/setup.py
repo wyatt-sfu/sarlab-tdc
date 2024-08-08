@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from setuptools import Extension, setup
+from setuptools import Extension, setup, find_packages
 from setuptools.command.build_ext import build_ext
 
 # This was taken from the example here:
@@ -47,9 +47,12 @@ class CMakeBuild(build_ext):
         # Set Python_EXECUTABLE instead if you use PYBIND11_FINDPYTHON
         # EXAMPLE_VERSION_INFO shows you how to pass a value into the C++ code
         # from Python.
+        import sysconfig
+        site_packages_path = sysconfig.get_paths()["purelib"]
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
+            f"-Dpybind11_DIR={os.path.join(site_packages_path, 'pybind11', 'share', 'cmake', 'pybind11')}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
         ]
         build_args = []
@@ -124,6 +127,7 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    ext_modules=[CMakeExtension("sarlabtdc")],
+    ext_modules=[CMakeExtension("_sarlabtdc")],
     cmdclass={"build_ext": CMakeBuild},
+    packages=find_packages()
 )

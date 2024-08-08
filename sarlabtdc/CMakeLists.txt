@@ -6,7 +6,7 @@ set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(sarlabtdc VERSION 1.0.0 LANGUAGES CXX)
+project(_sarlabtdc VERSION 1.0.0 LANGUAGES CXX)
 
 find_package(pybind11 CONFIG REQUIRED)
 
@@ -16,15 +16,15 @@ message("TDCLIB_DIR: ${TDCLIB_DIR}")
 add_subdirectory(${TDCLIB_DIR} ${CMAKE_SOURCE_DIR}/build/tdc-lib)
 
 # Create the pybind module
-pybind11_add_module(sarlabtdc
+pybind11_add_module(_sarlabtdc
     src/interface.cpp
     src/tdcprocessor_wrapper.cpp
 )
 
-target_include_directories(sarlabtdc PUBLIC
+target_include_directories(_sarlabtdc PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
 
-target_link_libraries(sarlabtdc PRIVATE
+target_link_libraries(_sarlabtdc PRIVATE
     tdc-lib
 )

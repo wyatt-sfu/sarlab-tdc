@@ -6,7 +6,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(sarlabtdc, m)
+PYBIND11_MODULE(_sarlabtdc, m)
 {
     m.doc() =
         "Time-domain correlation SAR processor for high bandwidth mmWave "
