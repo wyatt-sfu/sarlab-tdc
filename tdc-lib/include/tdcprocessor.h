@@ -5,6 +5,7 @@
 #include <array>
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -151,6 +152,7 @@ private:
     std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams;
     std::array<GpuPitchedArrayPtr<float2>, NUM_STREAMS> rawDataGpu;
     std::array<GpuPitchedArrayPtr<float>, NUM_STREAMS> windowGpu;
+    std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> nppScratchGpu;
     std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> positionGpu;
     std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> attitudeGpu;
     GpuArrayPtr<float> priTimesGpu;

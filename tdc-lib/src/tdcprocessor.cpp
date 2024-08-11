@@ -12,10 +12,13 @@
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 #include <nppcore.h>
+#include <nppdefs.h>
+#include <nppi_statistics_functions.h>
 #include <vector_types.h>
 
 /* 3rd party headers */
 #include <fmt/core.h>
+#include <spdlog/common.h>
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -61,6 +64,9 @@ void TdcProcessor::start()
     allocateHostMemory();
     initGpuData();
 
+    // Grab a pointer to the max value symbol on the device
+    float *maxValPtr = reinterpret_cast<float *>(getWindowMaxValuePtr());
+
     nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
     size_t streamIdx = 0;
     size_t nextStreamIdx = 1;
@@ -87,6 +93,11 @@ void TdcProcessor::start()
 
                 // Compute the max value of the window
                 nppSetStream(streams[streamIdx]->ptr());
+                nppiMax_32f_C1R(windowGpu[streamIdx]->ptr(),
+                                static_cast<int>(windowGpu[streamIdx]->pitch()),
+                                {nSamples, PRI_CHUNKSIZE},
+                                nppScratchGpu[streamIdx]->ptr(),
+                                maxValPtr + streamIdx);
             }
         }
         cudaDeviceSynchronize();
@@ -170,6 +181,21 @@ void TdcProcessor::allocateGpuMemory()
     imageGpu =
         std::make_unique<GpuPitchedArray<float2>>(gridNumRows, gridNumCols);
     log->info("... Done allocating GPU memory for focused scene");
+
+    log->info("Allocating GPU scratch space ...");
+    size_t scratchSize = 0;
+    NppStatus status = nppiMaxGetBufferHostSize_32f_C1R(
+        {nSamples, PRI_CHUNKSIZE}, &scratchSize);
+    if (status != 0) {
+        throw std::runtime_error(
+            fmt::format("Failed to compute scratch space size: {}",
+                        static_cast<int>(status)));
+    }
+    for (int i = 0; i < NUM_STREAMS; ++i) {
+        nppScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(scratchSize);
+    }
+
+    log->info("... Done allocating GPU scratch space");
 }
 
 void TdcProcessor::allocateHostMemory()

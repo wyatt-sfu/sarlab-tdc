@@ -5,6 +5,11 @@
 #include <cuda_runtime.h>
 
 /**
+ * Return a device pointer to the windowMaxValue array
+ */
+void *getWindowMaxValuePtr();
+
+/**
  * Create the window array
  */
 void createWindow(float *window, int chunkIdx, int nPri, int nSamples,

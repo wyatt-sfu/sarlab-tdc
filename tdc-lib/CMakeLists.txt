@@ -33,4 +33,5 @@ target_link_libraries(tdc-lib PUBLIC
     spdlog::spdlog
     CUDA::cudart_static
     CUDA::nppc
+    CUDA::nppist
 )

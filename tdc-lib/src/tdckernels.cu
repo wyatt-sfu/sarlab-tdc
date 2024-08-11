@@ -1,4 +1,5 @@
 /* CUDA headers */
+#include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <driver_types.h>
 #include <vector_types.h>
@@ -10,7 +11,14 @@
 #include "tdckernels.h"
 
 /** Global variable used for storing the maximum of the window array */
-__device__ float windowMaxValue;
+__device__ float windowMaxValue[NUM_STREAMS];
+
+void *getWindowMaxValuePtr()
+{
+    void *devPtr;
+    cudaGetSymbolAddress(&devPtr, windowMaxValue);
+    return devPtr;
+}
 
 __global__ void createWindowKernel(float *window, int chunkIdx, int nPri,
                                    int nSamp)
