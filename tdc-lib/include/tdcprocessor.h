@@ -151,6 +151,7 @@ private:
     /* GPU data structures */
     std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams;
     std::array<GpuPitchedArrayPtr<float2>, NUM_STREAMS> rawDataGpu;
+    std::array<GpuPitchedArrayPtr<float2>, NUM_STREAMS> referenceGpu;
     std::array<GpuPitchedArrayPtr<float>, NUM_STREAMS> windowGpu;
     std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> nppScratchGpu;
     std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> positionGpu;

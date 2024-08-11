@@ -19,6 +19,7 @@
 /* 3rd party headers */
 #include <fmt/core.h>
 #include <spdlog/common.h>
+#include <spdlog/logger.h>
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -159,6 +160,8 @@ void TdcProcessor::allocateGpuMemory()
     log->info("Allocating GPU memory for raw data ...");
     for (int i = 0; i < NUM_STREAMS; ++i) {
         rawDataGpu[i] =
+            std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+        referenceGpu[i] =
             std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
         windowGpu[i] =
             std::make_unique<GpuPitchedArray<float>>(PRI_CHUNKSIZE, nSamples);
