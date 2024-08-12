@@ -11,12 +11,12 @@
 #include "tdckernels.h"
 
 /** Global variable used for storing the maximum of the window array */
-__device__ float windowMaxValue[NUM_STREAMS];
+__device__ float WindowMaxValue[NUM_STREAMS];
 
 void *getWindowMaxValuePtr()
 {
     void *devPtr;
-    cudaGetSymbolAddress(&devPtr, windowMaxValue);
+    cudaGetSymbolAddress(&devPtr, WindowMaxValue);
     return devPtr;
 }
 
@@ -50,7 +50,15 @@ void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
                                                            nPri, nSamples);
 }
 
-__global__ void focusToGridPointKernel() {}
+__global__ void focusToGridPointKernel(
+    float2 const *rawData, float2 const *reference, float *window,
+    float4 const *position, float4 const *velocity, float4 const *attitude,
+    float const *priTimes, float const *sampleTimes, float4 const *focusGrid,
+    float2 const *image, float modRate, float startFreq, int chunkIdx, int nPri,
+    int nSamples, int streamIdx)
+{
+    float winMax = WindowMaxValue[streamIdx];
+}
 
 void focusToGridPoint(float2 const *rawData, float2 const *reference,
                       float *window, float4 const *position,
@@ -60,5 +68,8 @@ void focusToGridPoint(float2 const *rawData, float2 const *reference,
                       float modRate, float startFreq, int chunkIdx, int nPri,
                       int nSamples, int streamIdx, cudaStream_t stream)
 {
-    focusToGridPointKernel<<<1, 1, 0, stream>>>();
+    focusToGridPointKernel<<<1, 1, 0, stream>>>(
+        rawData, reference, window, position, velocity, attitude, priTimes,
+        sampleTimes, focusGrid, image, modRate, startFreq, chunkIdx, nPri,
+        nSamples, streamIdx);
 }
