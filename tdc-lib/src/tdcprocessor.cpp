@@ -103,8 +103,15 @@ void TdcProcessor::start()
                                 maxValPtr + streamIdx);
 
                 // Focus the chunk of data to the specified grid point
-                focusToGridPoint(windowGpu[streamIdx]->ptr(), i, nPri, nSamples,
-                                 streams[streamIdx]->ptr());
+                focusToGridPoint(
+                    rawDataGpu[streamIdx]->ptr(),
+                    referenceGpu[streamIdx]->ptr(), windowGpu[streamIdx]->ptr(),
+                    positionGpu[streamIdx]->ptr(),
+                    velocityGpu[streamIdx]->ptr(),
+                    attitudeGpu[streamIdx]->ptr(), priTimesGpu->ptr(),
+                    sampleTimesGpu->ptr(), focusGridGpu->ptr(), imageGpu->ptr(),
+                    modRate, startFreq, i, nPri, nSamples, streamIdx,
+                    streams[streamIdx]->ptr());
             }
         }
         cudaDeviceSynchronize();
