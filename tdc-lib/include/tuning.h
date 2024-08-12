@@ -3,6 +3,9 @@
  * performance tuning the software.
  */
 
+/* Standard library headers */
+#include <cstddef>
+
 /* CUDA headers */
 #include <vector_types.h>
 

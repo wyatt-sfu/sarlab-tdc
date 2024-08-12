@@ -26,6 +26,7 @@ void TdcProcessorWrapper::setRawData(
     py::array_t<float, py::array::c_style> priTimes,
     py::array_t<float, py::array::c_style> sampleTimes,
     py::array_t<float, py::array::c_style> position,
+    py::array_t<float, py::array::c_style> velocity,
     py::array_t<float, py::array::c_style> attitude, float modRate,
     float startFreq)
 {
@@ -34,6 +35,7 @@ void TdcProcessorWrapper::setRawData(
     this->priTimes = priTimes;
     this->sampleTimes = sampleTimes;
     this->position = position;
+    this->velocity = velocity;
     this->attitude = attitude;
 
     // Get array info structures
@@ -41,6 +43,7 @@ void TdcProcessorWrapper::setRawData(
     auto priTimeInfo = priTimes.request();
     auto sampleTimeInfo = sampleTimes.request();
     auto posInfo = position.request();
+    auto velInfo = velocity.request();
     auto attInfo = attitude.request();
 
     // Check array dimensions
@@ -58,6 +61,10 @@ void TdcProcessorWrapper::setRawData(
 
     if (posInfo.ndim != 3) {
         throw std::runtime_error("position must be 3D");
+    }
+
+    if (velInfo.ndim != 3) {
+        throw std::runtime_error("velocity must be 3D");
     }
 
     if (attInfo.ndim != 3) {
@@ -82,6 +89,11 @@ void TdcProcessorWrapper::setRawData(
         throw std::runtime_error("position shape is incorrect");
     }
 
+    if (velInfo.shape[0] != nPri || velInfo.shape[1] != nSamples
+        || velInfo.shape[2] != 4) {
+        throw std::runtime_error("velocity shape is incorrect");
+    }
+
     if (attInfo.shape[0] != nPri || attInfo.shape[1] != nSamples
         || attInfo.shape[2] != 4) {
         throw std::runtime_error("attitude shape is incorrect");
@@ -92,11 +104,12 @@ void TdcProcessorWrapper::setRawData(
     auto *priTimePtr = reinterpret_cast<float const *>(priTimeInfo.ptr);
     auto *sampleTimePtr = reinterpret_cast<float const *>(sampleTimeInfo.ptr);
     auto *posPtr = reinterpret_cast<float const *>(posInfo.ptr);
+    auto *velPtr = reinterpret_cast<float const *>(velInfo.ptr);
     auto *attPtr = reinterpret_cast<float const *>(attInfo.ptr);
 
     // Call the underlying C++ function
-    tdcProc->setRawData(dataPtr, priTimePtr, sampleTimePtr, posPtr, attPtr,
-                        nPri, nSamples, modRate, startFreq);
+    tdcProc->setRawData(dataPtr, priTimePtr, sampleTimePtr, posPtr, velPtr,
+                        attPtr, nPri, nSamples, modRate, startFreq);
 }
 
 void TdcProcessorWrapper::setFocusGrid(

@@ -86,6 +86,9 @@ void TdcProcessor::start()
             transferNextChunk(i + 1, nextStreamIdx);
         }
 
+        // Tell NPP to use the specific stream
+        nppSetStream(streams[streamIdx]->ptr());
+
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
                 // Create the window array
@@ -93,12 +96,15 @@ void TdcProcessor::start()
                              streams[streamIdx]->ptr());
 
                 // Compute the max value of the window
-                nppSetStream(streams[streamIdx]->ptr());
                 nppiMax_32f_C1R(windowGpu[streamIdx]->ptr(),
                                 static_cast<int>(windowGpu[streamIdx]->pitch()),
                                 {nSamples, PRI_CHUNKSIZE},
                                 nppScratchGpu[streamIdx]->ptr(),
                                 maxValPtr + streamIdx);
+
+                // Focus the chunk of data to the specified grid point
+                focusToGridPoint(windowGpu[streamIdx]->ptr(), i, nPri, nSamples,
+                                 streams[streamIdx]->ptr());
             }
         }
         cudaDeviceSynchronize();
@@ -107,9 +113,9 @@ void TdcProcessor::start()
 
 void TdcProcessor::setRawData(std::complex<float> const *rawData,
                               float const *priTimes, float const *sampleTimes,
-                              float const *position, float const *attitude,
-                              int nPri, int nSamples, float modRate,
-                              float startFreq)
+                              float const *position, float const *velocity,
+                              float const *attitude, int nPri, int nSamples,
+                              float modRate, float startFreq)
 {
     log->info("Setting raw data with {} PRIs and {} samples/PRI", nPri,
               nSamples);
@@ -117,6 +123,7 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData,
     this->priTimes = priTimes;
     this->sampleTimes = sampleTimes;
     this->position = position;
+    this->velocity = velocity;
     this->attitude = attitude;
     this->nPri = nPri;
     this->nSamples = nSamples;
@@ -166,6 +173,8 @@ void TdcProcessor::allocateGpuMemory()
         windowGpu[i] =
             std::make_unique<GpuPitchedArray<float>>(PRI_CHUNKSIZE, nSamples);
         positionGpu[i] =
+            std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
+        velocityGpu[i] =
             std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
         attitudeGpu[i] =
             std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);

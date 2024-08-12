@@ -49,3 +49,11 @@ void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
     createWindowKernel<<<gridSize, blockSize, 0, stream>>>(window, chunkIdx,
                                                            nPri, nSamples);
 }
+
+__global__ void focusToGridPointKernel() {}
+
+void focusToGridPoint(float *window, int chunkIdx, int nPri, int nSamples,
+                      cudaStream_t stream)
+{
+    focusToGridPointKernel<<<1, 1, 0, stream>>>();
+}

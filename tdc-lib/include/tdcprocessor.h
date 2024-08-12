@@ -78,6 +78,11 @@ public:
      *           - Last dimension is ordered (x, y, z, 0)
      *           - Stored row-wise
      *           - Last element of each value is 0 for GPU performance
+     * velocity: Pointer to a 3D array array of radar phase center velocities
+     *           - Shape is nPri x nSamples x 4
+     *           - Last dimension is ordered (x, y, z, 0)
+     *           - Stored row-wise
+     *           - Last element of each value is 0 for GPU performance
      * attitude: Pointer to a 3D array of radar attitude values
      *           - Orientation represented as a quaternion rotation from body
      *             coordinate system to the local coordinate system
@@ -91,8 +96,8 @@ public:
      */
     void setRawData(std::complex<float> const *rawData, float const *priTimes,
                     float const *sampleTimes, float const *position,
-                    float const *attitude, int nPri, int nSamples,
-                    float modRate, float startFreq);
+                    float const *velocity, float const *attitude, int nPri,
+                    int nSamples, float modRate, float startFreq);
 
     /**
      * Configures the focus grid. This needs to be called before start().
@@ -136,6 +141,7 @@ private:
 
     /* Radar position fields */
     float const *position = nullptr;
+    float const *velocity = nullptr;
     float const *attitude = nullptr;
 
     /* Focus grid fields */
@@ -155,6 +161,7 @@ private:
     std::array<GpuPitchedArrayPtr<float>, NUM_STREAMS> windowGpu;
     std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> nppScratchGpu;
     std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> positionGpu;
+    std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> velocityGpu;
     std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> attitudeGpu;
     GpuArrayPtr<float> priTimesGpu;
     GpuArrayPtr<float> sampleTimesGpu;
