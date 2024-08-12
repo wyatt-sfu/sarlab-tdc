@@ -151,7 +151,8 @@ private:
 
     /* Staging buffers for transferring data to the GPU */
     std::unique_ptr<PageLockedHost> rawStaging;
-    std::unique_ptr<PageLockedHost> posStaging;
+    std::unique_ptr<PageLockedHost> positionStaging;
+    std::unique_ptr<PageLockedHost> velocityStaging;
     std::unique_ptr<PageLockedHost> attitudeStaging;
 
     /* GPU data structures */

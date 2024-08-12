@@ -223,7 +223,8 @@ void TdcProcessor::allocateHostMemory()
     size_t stagingSizePos = PRI_CHUNKSIZE * nSamples * sizeof(float4);
     log->info("Allocating page locked host memory ...");
     rawStaging = std::make_unique<PageLockedHost>(stagingSizeData);
-    posStaging = std::make_unique<PageLockedHost>(stagingSizePos);
+    positionStaging = std::make_unique<PageLockedHost>(stagingSizePos);
+    velocityStaging = std::make_unique<PageLockedHost>(stagingSizePos);
     attitudeStaging = std::make_unique<PageLockedHost>(stagingSizePos);
     log->info("... Done allocating page locked host memory");
 }
@@ -253,7 +254,10 @@ void TdcProcessor::transferNextChunk(int chunkIdx, size_t streamIdx)
         reinterpret_cast<const float2 *>(rawStaging->ptr()),
         nSamples * sizeof(float2), streams[streamIdx]->ptr());
     positionGpu[streamIdx]->hostToDeviceAsync(
-        reinterpret_cast<const float4 *>(posStaging->ptr()),
+        reinterpret_cast<const float4 *>(positionStaging->ptr()),
+        nSamples * sizeof(float4), streams[streamIdx]->ptr());
+    velocityGpu[streamIdx]->hostToDeviceAsync(
+        reinterpret_cast<const float4 *>(velocityStaging->ptr()),
         nSamples * sizeof(float4), streams[streamIdx]->ptr());
     attitudeGpu[streamIdx]->hostToDeviceAsync(
         reinterpret_cast<const float4 *>(attitudeStaging->ptr()),
@@ -272,6 +276,7 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
 
     const auto *rawPtr = reinterpret_cast<const uint8_t *>(rawData);
     const auto *posPtr = reinterpret_cast<const uint8_t *>(position);
+    const auto *velPtr = reinterpret_cast<const uint8_t *>(velocity);
     const auto *attPtr = reinterpret_cast<const uint8_t *>(attitude);
 
     log->info("Staging chunk {} of {}", chunkIdx + 1, nChunks);
@@ -279,8 +284,11 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
     std::memcpy(rawStaging->ptr(),
                 rawPtr + (priIndex * nSamples * sizeof(float2)),
                 stagingSizeData);
-    std::memcpy(posStaging->ptr(),
+    std::memcpy(positionStaging->ptr(),
                 posPtr + (priIndex * nSamples * sizeof(float4)),
+                stagingSizePos);
+    std::memcpy(velocityStaging->ptr(),
+                velPtr + (priIndex * nSamples * sizeof(float4)),
                 stagingSizePos);
     std::memcpy(attitudeStaging->ptr(),
                 attPtr + (priIndex * nSamples * sizeof(float4)),
