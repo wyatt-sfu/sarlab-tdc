@@ -27,6 +27,13 @@ constexpr size_t NUM_STREAMS = 2;
 constexpr float WINDOW_LOWER_BOUND = 0.01;
 
 /**
+ * The "a" parameter for the range window function.
+ * Setting this value to 25/46 creates a Hamming window, and setting it to
+ * 0.5 creates a Hann window.
+ */
+constexpr float RANGE_WINDOW_A_PARAMETER = 25.0 / 46.0;
+
+/**
  * Tuning parameters for the window generation kernel
  */
 namespace WindowKernel {

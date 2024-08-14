@@ -165,6 +165,7 @@ private:
     std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> attitudeGpu;
     GpuArrayPtr<float> priTimesGpu;
     GpuArrayPtr<float> sampleTimesGpu;
+    GpuArrayPtr<float> rangeWindowGpu;
     GpuPitchedArrayPtr<float2> imageGpu;
 
     /* Logging */

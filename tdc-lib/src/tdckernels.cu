@@ -2,6 +2,8 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <driver_types.h>
+#include <math_constants.h>
+#include <math_functions.h>
 #include <vector_types.h>
 
 /* Project headers */
@@ -10,14 +12,42 @@
 /* Class header */
 #include "tdckernels.h"
 
-/** Global variable used for storing the maximum of the window array */
+/* Global variable used for storing the maximum of the window array */
 __device__ float WindowMaxValue[NUM_STREAMS];
 
+/**
+ * Return a device pointer to the WindowMaxValue array.
+ */
 void *getWindowMaxValuePtr()
 {
     void *devPtr;
     cudaGetSymbolAddress(&devPtr, WindowMaxValue);
     return devPtr;
+}
+
+/**
+ * Cuda kernel for initializing the range window array.
+ */
+__global__ void initRangeWindowKernel(float *rgWin, int nSamples)
+{
+    unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (sampleIdx >= nSamples) {
+        return;
+    }
+
+    rgWin[sampleIdx] = RANGE_WINDOW_A_PARAMETER
+                       - ((1.0 - RANGE_WINDOW_A_PARAMETER)
+                          * cosf(2.0F * CUDART_PI_F * sampleIdx / nSamples));
+}
+
+/**
+ * Initialize the range window array with a Hamming window.
+ */
+void initRangeWindow(float *rgWin, int nSamples)
+{
+    dim3 const blockSize(32, 0, 0);
+    dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x, 0, 0);
+    initRangeWindowKernel<<<gridSize, blockSize>>>(rgWin, nSamples);
 }
 
 /**
@@ -27,21 +57,18 @@ void *getWindowMaxValuePtr()
 __global__ void createWindowKernel(float *window, int chunkIdx, int nPri,
                                    int nSamp)
 {
-    unsigned int const priWindowIdx = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int const priChunkIdx = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
-    unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priWindowIdx;
-    float winVal = 0;
+    unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
 
-    if (priWindowIdx < PRI_CHUNKSIZE && sampleIdx < nSamp) {
-        if (priGlobalIdx < nPri) {
-            // TODO: Compute window based on Doppler
-            winVal = 1.0;
-        } else {
-            winVal = 0.0;
-        }
+    if (priGlobalIdx >= nPri) {
+        return;
     }
 
-    window[priWindowIdx * nSamp + sampleIdx] = winVal;
+    if (priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamp) {
+        // TODO: Compute window based on Doppler
+        window[priChunkIdx * nSamp + sampleIdx] = 1.0;
+    }
 }
 
 /**
@@ -109,6 +136,6 @@ void focusToGridPoint(float2 const *rawData, float2 const *reference,
 {
     focusToGridPointKernel<<<1, 1, 0, stream>>>(
         rawData, reference, window, position, velocity, attitude, priTimes,
-        sampleTimes, image, target, modRate, startFreq, chunkIdx,
-        nPri, nSamples, streamIdx);
+        sampleTimes, image, target, modRate, startFreq, chunkIdx, nPri,
+        nSamples, streamIdx);
 }

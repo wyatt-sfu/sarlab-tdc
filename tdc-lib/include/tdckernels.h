@@ -13,6 +13,11 @@
 void *getWindowMaxValuePtr();
 
 /**
+ * Initialize the range window array with a Hamming window.
+ */
+void initRangeWindow(float *rgWin, int nSamples);
+
+/**
  * Create the window array for the specified chunk of raw data.
  */
 void createWindow(float *window, int chunkIdx, int nPri, int nSamples,

@@ -211,6 +211,7 @@ void TdcProcessor::allocateGpuMemory()
         nppScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(scratchSize);
     }
 
+    rangeWindowGpu = std::make_unique<GpuArray<float>>(nSamples);
     log->info("... Done allocating GPU scratch space");
 }
 
@@ -237,6 +238,10 @@ void TdcProcessor::initGpuData()
     cudaError_t err = cudaMemset2D(imageGpu->ptr(), imageGpu->pitch(), 0,
                                    gridNumCols * sizeof(float2), gridNumRows);
     log->info("... Done initializing focused image");
+
+    log->info("Initializing range window ...");
+    initRangeWindow(rangeWindowGpu->ptr(), nSamples);
+    log->info("... Done initializing range window");
 }
 
 void TdcProcessor::transferNextChunk(int chunkIdx, size_t streamIdx)
