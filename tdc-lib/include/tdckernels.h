@@ -7,12 +7,13 @@
 #include <vector_types.h>
 
 /**
- * Return a device pointer to the windowMaxValue array
+ * Return a device pointer to the WindowMaxValue array.
+ * See tdckernels.cu for details.
  */
 void *getWindowMaxValuePtr();
 
 /**
- * Create the window array
+ * Create the window array for the specified chunk of raw data.
  */
 void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
                   cudaStream_t stream);

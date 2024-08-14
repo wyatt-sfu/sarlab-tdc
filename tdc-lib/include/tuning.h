@@ -21,9 +21,20 @@ constexpr size_t PRI_CHUNKSIZE = 128;
 constexpr size_t NUM_STREAMS = 2;
 
 /**
+ * If the maximum value in the window array for a specific chunk is below this
+ * value then it will not be processed.
+ */
+constexpr float WINDOW_LOWER_BOUND = 0.01;
+
+/**
  * Tuning parameters for the window generation kernel
  */
 namespace WindowKernel {
-constexpr unsigned int BlockSizeX = 8;
-constexpr unsigned int BlockSizeY = PRI_CHUNKSIZE;
+constexpr unsigned int BlockSizeX = 16;
+constexpr unsigned int BlockSizeY = 16;
+}
+
+namespace ReferenceResponseKernel {
+constexpr unsigned int BlockSizeX = 16;
+constexpr unsigned int BlockSizeY = 16;
 }

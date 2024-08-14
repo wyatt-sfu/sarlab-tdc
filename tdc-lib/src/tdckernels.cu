@@ -20,6 +20,10 @@ void *getWindowMaxValuePtr()
     return devPtr;
 }
 
+/**
+ * Cuda kernel for computing the window function for the specified chunk of
+ * raw data.
+ */
 __global__ void createWindowKernel(float *window, int chunkIdx, int nPri,
                                    int nSamp)
 {
@@ -40,16 +44,37 @@ __global__ void createWindowKernel(float *window, int chunkIdx, int nPri,
     window[priWindowIdx * nSamp + sampleIdx] = winVal;
 }
 
+/**
+ * Wrapper around the cuda kernel createWindowKernel
+ */
 void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
                   cudaStream_t stream)
 {
     dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 0);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
-                        (nPri + blockSize.y - 1) / blockSize.y, 0);
+                        (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
     createWindowKernel<<<gridSize, blockSize, 0, stream>>>(window, chunkIdx,
                                                            nPri, nSamples);
 }
 
+/**
+ * Cuda kernel which computes the reference response from a target at the
+ * specified position.
+ */
+__global__ void reference_response_tdc(float2 *reference,
+                                       float const *__restrict__ window,
+                                       float4 const *__restrict__ position,
+                                       int nPri, int nSamples, float target_x,
+                                       float target_y, float target_z,
+                                       float const *__restrict__ sample_time,
+                                       float modRate, float startFreq)
+{
+}
+
+/**
+ * Cuda kernel for focusing the data to the specified grid point.
+ * This kernel only does work if the window function is non-zero.
+ */
 __global__ void focusToGridPointKernel(
     float2 const *rawData, float2 const *reference, float *window,
     float4 const *position, float4 const *velocity, float4 const *attitude,
@@ -58,8 +83,23 @@ __global__ void focusToGridPointKernel(
     int nSamples, int streamIdx)
 {
     float winMax = WindowMaxValue[streamIdx];
+
+    // Only process the chunk if the window is non-zero
+    if (winMax > WINDOW_LOWER_BOUND) {
+        // Get the target location from the grid
+
+        // Create the reference response
+        dim3 const blockSize(ReferenceResponseKernel::BlockSizeX,
+                             ReferenceResponseKernel::BlockSizeY, 0);
+        dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
+                            (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
+        // reference_response_tdc<<<gridSize, blockSize>>>(reference, window, position, nPri, nSamples);
+    }
 }
 
+/**
+ * Wrapper around the cuda kernel focusToGridPointKernel
+ */
 void focusToGridPoint(float2 const *rawData, float2 const *reference,
                       float *window, float4 const *position,
                       float4 const *velocity, float4 const *attitude,
