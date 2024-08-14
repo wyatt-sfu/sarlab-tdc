@@ -105,10 +105,9 @@ public:
      * Arguments:
      * ------------
      * focusGrid: Pointer to a 3D array containing focus grid locations
-     *            - Shape is nRows x nCols x 4
-     *            - Last dimension is ordered (x, y, z, 0)
+     *            - Shape is nRows x nCols x 3
+     *            - Last dimension is ordered (x, y, z)
      *            - Stored row-wise
-     *            - Last element of each value is 0 for GPU performance
      * nRows: Number of rows in the focus grid
      * nCols: Number of columns in the focus grid
      */
@@ -145,7 +144,7 @@ private:
     float const *attitude = nullptr;
 
     /* Focus grid fields */
-    float const *focusGrid = nullptr;
+    float3 const *focusGrid = nullptr;
     int gridNumRows = 0;
     int gridNumCols = 0;
 
@@ -166,7 +165,6 @@ private:
     std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> attitudeGpu;
     GpuArrayPtr<float> priTimesGpu;
     GpuArrayPtr<float> sampleTimesGpu;
-    GpuPitchedArrayPtr<float4> focusGridGpu;
     GpuPitchedArrayPtr<float2> imageGpu;
 
     /* Logging */

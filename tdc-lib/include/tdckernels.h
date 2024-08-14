@@ -25,8 +25,8 @@ void focusToGridPoint(float2 const *rawData, float2 const *reference,
                       float *window, float4 const *position,
                       float4 const *velocity, float4 const *attitude,
                       float const *priTimes, float const *sampleTimes,
-                      float4 const *focusGrid, float2 const *image,
-                      float modRate, float startFreq, int chunkIdx, int nPri,
-                      int nSamples, int streamIdx, cudaStream_t stream);
+                      float2 const *image, float3 target, float modRate,
+                      float startFreq, int chunkIdx, int nPri, int nSamples,
+                      int streamIdx, cudaStream_t stream);
 
 #endif // TDCKERNELS_H

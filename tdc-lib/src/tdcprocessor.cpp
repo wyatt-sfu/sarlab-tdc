@@ -102,6 +102,8 @@ void TdcProcessor::start()
                                 nppScratchGpu[streamIdx]->ptr(),
                                 maxValPtr + streamIdx);
 
+                float3 target = focusGrid[(j * gridNumCols) + i];
+
                 // Focus the chunk of data to the specified grid point
                 focusToGridPoint(
                     rawDataGpu[streamIdx]->ptr(),
@@ -109,8 +111,8 @@ void TdcProcessor::start()
                     positionGpu[streamIdx]->ptr(),
                     velocityGpu[streamIdx]->ptr(),
                     attitudeGpu[streamIdx]->ptr(), priTimesGpu->ptr(),
-                    sampleTimesGpu->ptr(), focusGridGpu->ptr(), imageGpu->ptr(),
-                    modRate, startFreq, i, nPri, nSamples, streamIdx,
+                    sampleTimesGpu->ptr(), imageGpu->ptr(), target, modRate,
+                    startFreq, i, nPri, nSamples, static_cast<int>(streamIdx),
                     streams[streamIdx]->ptr());
             }
         }
@@ -150,7 +152,7 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData,
 void TdcProcessor::setFocusGrid(float const *focusGrid, int nRows, int nCols)
 {
     log->info("Configure the focus grid with shape {} x {}", nRows, nCols);
-    this->focusGrid = focusGrid;
+    this->focusGrid = reinterpret_cast<float3 const *>(focusGrid);
     gridNumRows = nRows;
     gridNumCols = nCols;
 }
@@ -191,11 +193,6 @@ void TdcProcessor::allocateGpuMemory()
     sampleTimesGpu = std::make_unique<GpuArray<float>>(nSamples);
     log->info("... Done allocating GPU memory for raw data");
 
-    log->info("Allocating GPU memory for focus grid ...");
-    focusGridGpu =
-        std::make_unique<GpuPitchedArray<float4>>(gridNumRows, gridNumCols);
-    log->info("... Done allocating GPU memory for focus grid");
-
     log->info("Allocating GPU memory for focused scene ...");
     imageGpu =
         std::make_unique<GpuPitchedArray<float2>>(gridNumRows, gridNumCols);
@@ -235,11 +232,6 @@ void TdcProcessor::initGpuData()
     priTimesGpu->hostToDevice(priTimes);
     sampleTimesGpu->hostToDevice(sampleTimes);
     log->info("... Done transferring timing data to the GPU");
-
-    log->info("Transferring focus grid to the GPU");
-    focusGridGpu->hostToDevice(reinterpret_cast<const float4 *>(focusGrid),
-                               gridNumCols * sizeof(float4));
-    log->info("... Done transferring focus grid to the GPU");
 
     log->info("Initializing focused image to zeros ...");
     cudaError_t err = cudaMemset2D(imageGpu->ptr(), imageGpu->pitch(), 0,

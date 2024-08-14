@@ -78,22 +78,21 @@ __global__ void reference_response_tdc(float2 *reference,
 __global__ void focusToGridPointKernel(
     float2 const *rawData, float2 const *reference, float *window,
     float4 const *position, float4 const *velocity, float4 const *attitude,
-    float const *priTimes, float const *sampleTimes, float4 const *focusGrid,
-    float2 const *image, float modRate, float startFreq, int chunkIdx, int nPri,
+    float const *priTimes, float const *sampleTimes, float2 const *image,
+    float3 target, float modRate, float startFreq, int chunkIdx, int nPri,
     int nSamples, int streamIdx)
 {
     float winMax = WindowMaxValue[streamIdx];
 
     // Only process the chunk if the window is non-zero
     if (winMax > WINDOW_LOWER_BOUND) {
-        // Get the target location from the grid
-
         // Create the reference response
         dim3 const blockSize(ReferenceResponseKernel::BlockSizeX,
                              ReferenceResponseKernel::BlockSizeY, 0);
         dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                             (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
-        // reference_response_tdc<<<gridSize, blockSize>>>(reference, window, position, nPri, nSamples);
+        // reference_response_tdc<<<gridSize, blockSize>>>(reference, window,
+        // position, nPri, nSamples);
     }
 }
 
@@ -104,12 +103,12 @@ void focusToGridPoint(float2 const *rawData, float2 const *reference,
                       float *window, float4 const *position,
                       float4 const *velocity, float4 const *attitude,
                       float const *priTimes, float const *sampleTimes,
-                      float4 const *focusGrid, float2 const *image,
-                      float modRate, float startFreq, int chunkIdx, int nPri,
-                      int nSamples, int streamIdx, cudaStream_t stream)
+                      float2 const *image, float3 target, float modRate,
+                      float startFreq, int chunkIdx, int nPri, int nSamples,
+                      int streamIdx, cudaStream_t stream)
 {
     focusToGridPointKernel<<<1, 1, 0, stream>>>(
         rawData, reference, window, position, velocity, attitude, priTimes,
-        sampleTimes, focusGrid, image, modRate, startFreq, chunkIdx, nPri,
-        nSamples, streamIdx);
+        sampleTimes, image, target, modRate, startFreq, chunkIdx,
+        nPri, nSamples, streamIdx);
 }

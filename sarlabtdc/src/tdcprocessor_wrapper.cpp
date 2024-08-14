@@ -125,7 +125,7 @@ void TdcProcessorWrapper::setFocusGrid(
     int numCols = gridInfo.shape[1];
 
     // Check the array shape
-    if (gridInfo.shape[2] != 4) {
+    if (gridInfo.shape[2] != 3) {
         throw std::runtime_error("focusGrid shape is incorrect");
     }
 
