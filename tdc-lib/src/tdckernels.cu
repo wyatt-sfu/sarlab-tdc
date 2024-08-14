@@ -3,7 +3,6 @@
 #include <device_launch_parameters.h>
 #include <driver_types.h>
 #include <math_constants.h>
-#include <math_functions.h>
 #include <vector_types.h>
 
 /* Project headers */
@@ -27,6 +26,9 @@ void *getWindowMaxValuePtr()
 
 /**
  * Cuda kernel for initializing the range window array.
+ *
+ * rgWin: 1D array that will be filled with the range window weights
+ * nSamples: Number of samples
  */
 __global__ void initRangeWindowKernel(float *rgWin, int nSamples)
 {
@@ -41,7 +43,10 @@ __global__ void initRangeWindowKernel(float *rgWin, int nSamples)
 }
 
 /**
- * Initialize the range window array with a Hamming window.
+ * Initialize the range window array on the GPU
+ *
+ * rgWin: 1D array that will be filled with the range window weights
+ * nSamples: Number of samples
  */
 void initRangeWindow(float *rgWin, int nSamples)
 {
@@ -50,22 +55,30 @@ void initRangeWindow(float *rgWin, int nSamples)
     initRangeWindowKernel<<<gridSize, blockSize>>>(rgWin, nSamples);
 }
 
+__global__ void dopplerCentroid(float4 const *velocity, float4 const *attitude,
+                                float lambda, int chunkIdx, int nPri, int nSamp)
+{
+    float lambdaFac = 2.0f / lambda;
+}
+
 /**
  * Cuda kernel for computing the window function for the specified chunk of
  * raw data.
  */
-__global__ void createWindowKernel(float *window, int chunkIdx, int nPri,
-                                   int nSamp)
+__global__ void createWindowKernel(float *window, float const *rangeWindow,
+                                   float4 const *velocity,
+                                   float4 const *attitude, float lambda,
+                                   int chunkIdx, int nPri, int nSamp)
 {
     unsigned int const priChunkIdx = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
 
-    if (priGlobalIdx >= nPri) {
-        return;
-    }
+    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE
+        && sampleIdx < nSamp) {
+        float lambdaFac = 2.0f / lambda;
+        // Compute the Doppler centroid for this pulse
 
-    if (priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamp) {
         // TODO: Compute window based on Doppler
         window[priChunkIdx * nSamp + sampleIdx] = 1.0;
     }
@@ -80,8 +93,7 @@ void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
     dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 0);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
-    createWindowKernel<<<gridSize, blockSize, 0, stream>>>(window, chunkIdx,
-                                                           nPri, nSamples);
+    // createWindowKernel<<<gridSize, blockSize, 0, stream>>>();
 }
 
 /**
