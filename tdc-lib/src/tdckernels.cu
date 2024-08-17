@@ -11,6 +11,8 @@
 /* Class header */
 #include "tdckernels.h"
 
+#define SPEED_OF_LIGHT_F 299792458.0F
+
 /* Global variable used for storing the maximum of the window array */
 __device__ float WindowMaxValue[NUM_STREAMS];
 
@@ -103,11 +105,30 @@ void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
 __global__ void reference_response_tdc(float2 *reference,
                                        float const *__restrict__ window,
                                        float4 const *__restrict__ position,
-                                       int nPri, int nSamples, float target_x,
-                                       float target_y, float target_z,
-                                       float const *__restrict__ sample_time,
-                                       float modRate, float startFreq)
+                                       float const *__restrict__ sampleTime,
+                                       float3 target, float modRate,
+                                       float startFreq, int chunkIdx, int nPri,
+                                       int nSamp)
 {
+    unsigned int const priChunkIdx = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
+
+    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE
+        && sampleIdx < nSamp) {
+        const float4 phase_centre = position[priChunkIdx * nSamp + sampleIdx];
+
+        float dist_to_target =
+            norm3df(phase_centre.x - target.x, phase_centre.y - target.y,
+                    phase_centre.z - target.z);
+        const float freq = fmaf(sampleTime[sampleIdx], modRate, startFreq);
+        const float phi =
+            -4.0F * CUDART_PI_F * dist_to_target * (freq / SPEED_OF_LIGHT_F);
+        float sinval = 0.0;
+        float cosval = 0.0;
+        sincosf(phi, &sinval, &cosval);
+        reference[priChunkIdx * nSamp + sampleIdx] = {cosval, sinval};
+    }
 }
 
 /**
