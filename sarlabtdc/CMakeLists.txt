@@ -6,7 +6,7 @@ set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(_sarlabtdc VERSION 1.0.0 LANGUAGES CXX)
+project(_sarlabtdc VERSION 1.0.0 LANGUAGES CXX CUDA)
 
 find_package(pybind11 CONFIG REQUIRED)
 

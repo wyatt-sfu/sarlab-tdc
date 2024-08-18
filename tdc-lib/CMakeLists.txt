@@ -23,10 +23,11 @@ target_include_directories(tdc-lib PRIVATE
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
 )
 
-# This breaks pybind11! No idea why.
-# Unfortunately this means we can't use separable compilation
-# set_target_properties(tdc-lib PROPERTIES
-#     CUDA_SEPARABLE_COMPILATION ON)
+# Separable compilation is required for dynamic parallelism
+set_target_properties(tdc-lib PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(tdc-lib PROPERTIES
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
 target_link_libraries(tdc-lib PUBLIC
     fmt::fmt
