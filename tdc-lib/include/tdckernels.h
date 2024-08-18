@@ -26,8 +26,8 @@ void createWindow(float *window, int chunkIdx, int nPri, int nSamples,
 /**
  * Process the next chunk of data and focus it to the specified grid location.
  */
-void focusToGridPoint(float2 const *rawData, float2 const *reference,
-                      float *window, float4 const *position,
+void focusToGridPoint(float2 const *rawData, float2 *reference,
+                      float const *window, float4 const *position,
                       float4 const *velocity, float4 const *attitude,
                       float const *priTimes, float const *sampleTimes,
                       float2 const *image, float3 target, float modRate,

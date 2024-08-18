@@ -108,26 +108,29 @@ __global__ void reference_response_tdc(float2 *reference,
                                        float const *__restrict__ sampleTime,
                                        float3 target, float modRate,
                                        float startFreq, int chunkIdx, int nPri,
-                                       int nSamp)
+                                       int nSamples)
 {
     unsigned int const priChunkIdx = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
 
     if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE
-        && sampleIdx < nSamp) {
-        const float4 phase_centre = position[priChunkIdx * nSamp + sampleIdx];
-
+        && sampleIdx < nSamples) {
+        const float4 phase_centre =
+            position[priChunkIdx * nSamples + sampleIdx];
+        const float winVal = window[priChunkIdx * nSamples + sampleIdx];
         float dist_to_target =
             norm3df(phase_centre.x - target.x, phase_centre.y - target.y,
                     phase_centre.z - target.z);
+
         const float freq = fmaf(sampleTime[sampleIdx], modRate, startFreq);
         const float phi =
             -4.0F * CUDART_PI_F * dist_to_target * (freq / SPEED_OF_LIGHT_F);
         float sinval = 0.0;
         float cosval = 0.0;
         sincosf(phi, &sinval, &cosval);
-        reference[priChunkIdx * nSamp + sampleIdx] = {cosval, sinval};
+        reference[priChunkIdx * nSamples + sampleIdx] = {cosval * winVal,
+                                                         sinval * winVal};
     }
 }
 
@@ -136,7 +139,7 @@ __global__ void reference_response_tdc(float2 *reference,
  * This kernel only does work if the window function is non-zero.
  */
 __global__ void focusToGridPointKernel(
-    float2 const *rawData, float2 const *reference, float *window,
+    float2 const *rawData, float2 *reference, float const *window,
     float4 const *position, float4 const *velocity, float4 const *attitude,
     float const *priTimes, float const *sampleTimes, float2 const *image,
     float3 target, float modRate, float startFreq, int chunkIdx, int nPri,
@@ -151,16 +154,17 @@ __global__ void focusToGridPointKernel(
                              ReferenceResponseKernel::BlockSizeY, 0);
         dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                             (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
-        // reference_response_tdc<<<gridSize, blockSize>>>(reference, window,
-        // position, nPri, nSamples);
+        reference_response_tdc<<<gridSize, blockSize>>>(
+            reference, window, position, sampleTimes, target, modRate,
+            startFreq, chunkIdx, nPri, nSamples);
     }
 }
 
 /**
  * Wrapper around the cuda kernel focusToGridPointKernel
  */
-void focusToGridPoint(float2 const *rawData, float2 const *reference,
-                      float *window, float4 const *position,
+void focusToGridPoint(float2 const *rawData, float2 *reference,
+                      float const *window, float4 const *position,
                       float4 const *velocity, float4 const *attitude,
                       float const *priTimes, float const *sampleTimes,
                       float2 const *image, float3 target, float modRate,
