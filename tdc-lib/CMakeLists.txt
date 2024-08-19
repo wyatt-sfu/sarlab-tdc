@@ -13,6 +13,7 @@ find_package(spdlog CONFIG REQUIRED)
 add_library(tdc-lib STATIC
     src/tdckernels.cu
     src/tdcprocessor.cpp
+    src/cubscratch.cu
 )
 
 target_include_directories(tdc-lib PUBLIC
@@ -33,6 +34,4 @@ target_link_libraries(tdc-lib PUBLIC
     fmt::fmt
     spdlog::spdlog
     CUDA::cudart_static
-    CUDA::nppc
-    CUDA::nppist
 )
