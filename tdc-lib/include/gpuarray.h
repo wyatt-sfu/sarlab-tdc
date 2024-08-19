@@ -69,6 +69,11 @@ public:
     T *ptr() const { return array; }
 
     /**
+     * Returns the size of the array.
+     */
+    size_t size() const { return arraySize; }
+
+    /**
      * Copy data in hostArray to the device. Size of hostArray must be large
      * enough (no checks are performed).
      */
