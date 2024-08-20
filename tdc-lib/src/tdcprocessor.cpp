@@ -81,6 +81,7 @@ void TdcProcessor::start()
         if (i + 1 < nChunks) {
             transferNextChunk(i + 1, nextStreamIdx);
         }
+        log->info("Processing chunk {} of {}", i + 1, nChunks);
 
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
@@ -139,6 +140,10 @@ void TdcProcessor::start()
         }
         cudaDeviceSynchronize();
     }
+
+    log->info("Transferring focused image off the GPU ...");
+    imageGpu->deviceToHost(focusedImage.get());
+    log->info("... Done transferring the focused image off the GPU");
 
     log->info("Completed SAR processing");
 }
@@ -245,6 +250,11 @@ void TdcProcessor::allocateHostMemory()
     velocityStaging = std::make_unique<PageLockedHost>(stagingSizeVel);
     attitudeStaging = std::make_unique<PageLockedHost>(stagingSizeAtt);
     log->info("... Done allocating page locked host memory");
+
+    log->info("Allocating host memory for focused image ...");
+    focusedImage = std::make_unique<float2[]>(static_cast<size_t>(gridNumRows)
+                                              * gridNumCols);
+    log->info("... Done allocating host memory for focused image.");
 }
 
 void TdcProcessor::initGpuData()

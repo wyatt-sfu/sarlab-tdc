@@ -144,6 +144,7 @@ private:
     float3 const *focusGrid = nullptr;
     int gridNumRows = 0;
     int gridNumCols = 0;
+    std::unique_ptr<float2[]> focusedImage;
 
     /* Staging buffers for transferring data to the GPU */
     std::unique_ptr<PageLockedHost> rawStaging;
