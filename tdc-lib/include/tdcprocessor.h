@@ -19,7 +19,6 @@
 /* Project headers */
 #include "cudastream.h"
 #include "gpuarray.h"
-#include "gpupitchedarray.h"
 #include "pagelockedhost.h"
 #include "tuning.h"
 
@@ -74,15 +73,13 @@ public:
      *              relative to the start of the PRI.
      *              - Shape is nSamples
      * position: Pointer to a 3D array array of radar phase center positions
-     *           - Shape is nPri x nSamples x 4
-     *           - Last dimension is ordered (x, y, z, 0)
+     *           - Shape is nPri x nSamples x 3
+     *           - Last dimension is ordered (x, y, z)
      *           - Stored row-wise
-     *           - Last element of each value is 0 for GPU performance
      * velocity: Pointer to a 3D array array of radar phase center velocities
-     *           - Shape is nPri x nSamples x 4
-     *           - Last dimension is ordered (x, y, z, 0)
+     *           - Shape is nPri x nSamples x 3
+     *           - Last dimension is ordered (x, y, z)
      *           - Stored row-wise
-     *           - Last element of each value is 0 for GPU performance
      * attitude: Pointer to a 3D array of radar attitude values
      *           - Orientation represented as a quaternion rotation from body
      *             coordinate system to the local coordinate system
@@ -156,17 +153,18 @@ private:
 
     /* GPU data structures */
     std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams;
-    std::array<GpuPitchedArrayPtr<float2>, NUM_STREAMS> rawDataGpu;
-    std::array<GpuPitchedArrayPtr<float2>, NUM_STREAMS> referenceGpu;
-    std::array<GpuPitchedArrayPtr<float>, NUM_STREAMS> windowGpu;
-    std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> nppScratchGpu;
-    std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> positionGpu;
-    std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> velocityGpu;
-    std::array<GpuPitchedArrayPtr<float4>, NUM_STREAMS> attitudeGpu;
+    std::array<GpuArrayPtr<float2>, NUM_STREAMS> rawDataGpu;
+    std::array<GpuArrayPtr<float2>, NUM_STREAMS> referenceGpu;
+    std::array<GpuArrayPtr<float>, NUM_STREAMS> windowGpu;
+    std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> maxScratchGpu;
+    std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> sumScratchGpu;
+    std::array<GpuArrayPtr<float3>, NUM_STREAMS> positionGpu;
+    std::array<GpuArrayPtr<float3>, NUM_STREAMS> velocityGpu;
+    std::array<GpuArrayPtr<float4>, NUM_STREAMS> attitudeGpu;
     GpuArrayPtr<float> priTimesGpu;
     GpuArrayPtr<float> sampleTimesGpu;
     GpuArrayPtr<float> rangeWindowGpu;
-    GpuPitchedArrayPtr<float2> imageGpu;
+    GpuArrayPtr<float2> imageGpu;
 
     /* Logging */
     std::shared_ptr<spdlog::logger> log;

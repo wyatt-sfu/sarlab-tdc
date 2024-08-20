@@ -27,8 +27,8 @@ TEST(TdcProcessorTest, BasicTest)
     std::vector<std::complex<float>> raw(rawNumElem);
     std::vector<float> priTimes(rawNumElem);
     std::vector<float> sampleTimes(nSamples);
-    std::vector<float> position(rawNumElem * 4);
-    std::vector<float> velocity(rawNumElem * 4);
+    std::vector<float> position(rawNumElem * 3);
+    std::vector<float> velocity(rawNumElem * 3);
     std::vector<float> attitude(rawNumElem * 4);
     tdc.setRawData(raw.data(), priTimes.data(), sampleTimes.data(),
                    position.data(), velocity.data(), attitude.data(), nPri,

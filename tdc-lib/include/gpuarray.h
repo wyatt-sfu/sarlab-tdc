@@ -101,7 +101,7 @@ public:
                             cudaMemcpyHostToDevice, stream);
         if (err != cudaSuccess) {
             throw std::runtime_error(
-                fmt::format("Failed to copy memory to device: {}",
+                fmt::format("Failed to async copy memory to device: {}",
                             cudaGetErrorString(err)));
         }
     }

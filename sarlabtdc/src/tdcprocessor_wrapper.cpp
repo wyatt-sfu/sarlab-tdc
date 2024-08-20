@@ -85,12 +85,12 @@ void TdcProcessorWrapper::setRawData(
     }
 
     if (posInfo.shape[0] != nPri || posInfo.shape[1] != nSamples
-        || posInfo.shape[2] != 4) {
+        || posInfo.shape[2] != 3) {
         throw std::runtime_error("position shape is incorrect");
     }
 
     if (velInfo.shape[0] != nPri || velInfo.shape[1] != nSamples
-        || velInfo.shape[2] != 4) {
+        || velInfo.shape[2] != 3) {
         throw std::runtime_error("velocity shape is incorrect");
     }
 

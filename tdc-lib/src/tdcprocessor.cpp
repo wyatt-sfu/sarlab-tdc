@@ -11,9 +11,6 @@
 /* CUDA headers */
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
-#include <nppcore.h>
-#include <nppdefs.h>
-#include <nppi_statistics_functions.h>
 #include <vector_types.h>
 
 /* 3rd party headers */
@@ -24,9 +21,9 @@
 #include <spdlog/spdlog.h>
 
 /* Project headers */
+#include "cubscratch.h"
 #include "cudastream.h"
 #include "gpuarray.h"
-#include "gpupitchedarray.h"
 #include "pagelockedhost.h"
 #include "tdckernels.h"
 
@@ -65,12 +62,12 @@ void TdcProcessor::start()
     allocateHostMemory();
     initGpuData();
 
-    // Grab a pointer to the max value symbol on the device
-    float *maxValPtr = reinterpret_cast<float *>(getWindowMaxValuePtr());
-
     nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
     size_t streamIdx = 0;
     size_t nextStreamIdx = 1;
+
+    // Initialize the range window
+    initRangeWindow(rangeWindowGpu->ptr(), nSamples);
 
     // Before starting the loop we need to transfer the data for the first chunk
     transferNextChunk(0, streamIdx);
@@ -86,23 +83,40 @@ void TdcProcessor::start()
             transferNextChunk(i + 1, nextStreamIdx);
         }
 
-        // Tell NPP to use the specific stream
-        nppSetStream(streams[streamIdx]->ptr());
-
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
                 // Create the window array
-                createWindow(windowGpu[streamIdx]->ptr(), i, nPri, nSamples,
-                             streams[streamIdx]->ptr());
+                createWindow(
+                    // Window arrays
+                    windowGpu[streamIdx]->ptr(), //
+                    rangeWindowGpu->ptr(), //
 
-                // Compute the max value of the window
-                nppiMax_32f_C1R(windowGpu[streamIdx]->ptr(),
-                                static_cast<int>(windowGpu[streamIdx]->pitch()),
-                                {nSamples, PRI_CHUNKSIZE},
-                                nppScratchGpu[streamIdx]->ptr(),
-                                maxValPtr + streamIdx);
+                    // Position related arguments
+                    velocityGpu[streamIdx]->ptr(), //
+                    attitudeGpu[streamIdx]->ptr(), //
+
+                    // Radar parameters
+                    1.0F, 1.0F,
+
+                    // Data shape arguments
+                    i, nPri, nSamples, streams[streamIdx]->ptr());
 
                 float3 target = focusGrid[(j * gridNumCols) + i];
+
+                // Create the reference response for this grid location
+                referenceResponse(
+                    // Data array parameters
+                    referenceGpu[streamIdx]->ptr(), //
+                    windowGpu[streamIdx]->ptr(), //
+                    positionGpu[streamIdx]->ptr(), //
+                    sampleTimesGpu->ptr(), //
+                    target, //
+
+                    // Radar operating parameters
+                    startFreq, modRate,
+
+                    // Data shape arguments
+                    i, nPri, nSamples, streams[streamIdx]->ptr());
 
                 // Focus the chunk of data to the specified grid point
                 focusToGridPoint(
@@ -118,6 +132,8 @@ void TdcProcessor::start()
         }
         cudaDeviceSynchronize();
     }
+
+    log->info("Completed SAR processing");
 }
 
 void TdcProcessor::setRawData(std::complex<float> const *rawData,
@@ -176,17 +192,17 @@ void TdcProcessor::allocateGpuMemory()
     log->info("Allocating GPU memory for raw data ...");
     for (int i = 0; i < NUM_STREAMS; ++i) {
         rawDataGpu[i] =
-            std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+            std::make_unique<GpuArray<float2>>(PRI_CHUNKSIZE * nSamples);
         referenceGpu[i] =
-            std::make_unique<GpuPitchedArray<float2>>(PRI_CHUNKSIZE, nSamples);
+            std::make_unique<GpuArray<float2>>(PRI_CHUNKSIZE * nSamples);
         windowGpu[i] =
-            std::make_unique<GpuPitchedArray<float>>(PRI_CHUNKSIZE, nSamples);
+            std::make_unique<GpuArray<float>>(PRI_CHUNKSIZE * nSamples);
         positionGpu[i] =
-            std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
+            std::make_unique<GpuArray<float3>>(PRI_CHUNKSIZE * nSamples);
         velocityGpu[i] =
-            std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
+            std::make_unique<GpuArray<float3>>(PRI_CHUNKSIZE * nSamples);
         attitudeGpu[i] =
-            std::make_unique<GpuPitchedArray<float4>>(PRI_CHUNKSIZE, nSamples);
+            std::make_unique<GpuArray<float4>>(PRI_CHUNKSIZE * nSamples);
     }
 
     priTimesGpu = std::make_unique<GpuArray<float>>(nPri);
@@ -194,21 +210,21 @@ void TdcProcessor::allocateGpuMemory()
     log->info("... Done allocating GPU memory for raw data");
 
     log->info("Allocating GPU memory for focused scene ...");
-    imageGpu =
-        std::make_unique<GpuPitchedArray<float2>>(gridNumRows, gridNumCols);
+    imageGpu = std::make_unique<GpuArray<float2>>(gridNumRows * gridNumCols);
     log->info("... Done allocating GPU memory for focused scene");
 
     log->info("Allocating GPU scratch space ...");
-    size_t scratchSize = 0;
-    NppStatus status = nppiMaxGetBufferHostSize_32f_C1R(
-        {nSamples, PRI_CHUNKSIZE}, &scratchSize);
-    if (status != 0) {
-        throw std::runtime_error(
-            fmt::format("Failed to compute scratch space size: {}",
-                        static_cast<int>(status)));
-    }
+    size_t maxScratchSize =
+        CubHelpers::floatMaxScratchSize(PRI_CHUNKSIZE * nSamples);
+    size_t sumScratchSize =
+        CubHelpers::float2SumScratchSize(PRI_CHUNKSIZE * nSamples);
+
+    log->info("Maximum scratch size: {}", maxScratchSize);
+    log->info("Sum scratch size: {}", sumScratchSize);
+
     for (int i = 0; i < NUM_STREAMS; ++i) {
-        nppScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(scratchSize);
+        maxScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(maxScratchSize);
+        sumScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(sumScratchSize);
     }
 
     rangeWindowGpu = std::make_unique<GpuArray<float>>(nSamples);
@@ -218,12 +234,15 @@ void TdcProcessor::allocateGpuMemory()
 void TdcProcessor::allocateHostMemory()
 {
     size_t stagingSizeData = PRI_CHUNKSIZE * nSamples * sizeof(float2);
-    size_t stagingSizePos = PRI_CHUNKSIZE * nSamples * sizeof(float4);
+    size_t stagingSizePos = PRI_CHUNKSIZE * nSamples * sizeof(float3);
+    size_t stagingSizeVel = PRI_CHUNKSIZE * nSamples * sizeof(float3);
+    size_t stagingSizeAtt = PRI_CHUNKSIZE * nSamples * sizeof(float4);
+
     log->info("Allocating page locked host memory ...");
     rawStaging = std::make_unique<PageLockedHost>(stagingSizeData);
     positionStaging = std::make_unique<PageLockedHost>(stagingSizePos);
-    velocityStaging = std::make_unique<PageLockedHost>(stagingSizePos);
-    attitudeStaging = std::make_unique<PageLockedHost>(stagingSizePos);
+    velocityStaging = std::make_unique<PageLockedHost>(stagingSizeVel);
+    attitudeStaging = std::make_unique<PageLockedHost>(stagingSizeAtt);
     log->info("... Done allocating page locked host memory");
 }
 
@@ -235,8 +254,9 @@ void TdcProcessor::initGpuData()
     log->info("... Done transferring timing data to the GPU");
 
     log->info("Initializing focused image to zeros ...");
-    cudaError_t err = cudaMemset2D(imageGpu->ptr(), imageGpu->pitch(), 0,
-                                   gridNumCols * sizeof(float2), gridNumRows);
+    cudaError_t err = cudaMemset(imageGpu->ptr(), 0,
+                                 static_cast<size_t>(gridNumCols * gridNumRows)
+                                     * sizeof(float2));
     log->info("... Done initializing focused image");
 
     log->info("Initializing range window ...");
@@ -249,16 +269,16 @@ void TdcProcessor::transferNextChunk(int chunkIdx, size_t streamIdx)
     stageNextChunk(chunkIdx);
     rawDataGpu[streamIdx]->hostToDeviceAsync(
         reinterpret_cast<const float2 *>(rawStaging->ptr()),
-        nSamples * sizeof(float2), streams[streamIdx]->ptr());
+        streams[streamIdx]->ptr());
     positionGpu[streamIdx]->hostToDeviceAsync(
-        reinterpret_cast<const float4 *>(positionStaging->ptr()),
-        nSamples * sizeof(float4), streams[streamIdx]->ptr());
+        reinterpret_cast<const float3 *>(positionStaging->ptr()),
+        streams[streamIdx]->ptr());
     velocityGpu[streamIdx]->hostToDeviceAsync(
-        reinterpret_cast<const float4 *>(velocityStaging->ptr()),
-        nSamples * sizeof(float4), streams[streamIdx]->ptr());
+        reinterpret_cast<const float3 *>(velocityStaging->ptr()),
+        streams[streamIdx]->ptr());
     attitudeGpu[streamIdx]->hostToDeviceAsync(
         reinterpret_cast<const float4 *>(attitudeStaging->ptr()),
-        nSamples * sizeof(float4), streams[streamIdx]->ptr());
+        streams[streamIdx]->ptr());
 }
 
 void TdcProcessor::stageNextChunk(int chunkIdx)
@@ -269,7 +289,9 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
     size_t priIndex = chunkIdx * PRI_CHUNKSIZE;
     size_t prisToStage = std::min(PRI_CHUNKSIZE, nPri - priIndex);
     size_t stagingSizeData = prisToStage * nSamples * sizeof(float2);
-    size_t stagingSizePos = prisToStage * nSamples * sizeof(float4);
+    size_t stagingSizePos = prisToStage * nSamples * sizeof(float3);
+    size_t stagingSizeVel = prisToStage * nSamples * sizeof(float3);
+    size_t stagingSizeAtt = prisToStage * nSamples * sizeof(float4);
 
     const auto *rawPtr = reinterpret_cast<const uint8_t *>(rawData);
     const auto *posPtr = reinterpret_cast<const uint8_t *>(position);
@@ -282,12 +304,12 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
                 rawPtr + (priIndex * nSamples * sizeof(float2)),
                 stagingSizeData);
     std::memcpy(positionStaging->ptr(),
-                posPtr + (priIndex * nSamples * sizeof(float4)),
+                posPtr + (priIndex * nSamples * sizeof(float3)),
                 stagingSizePos);
     std::memcpy(velocityStaging->ptr(),
-                velPtr + (priIndex * nSamples * sizeof(float4)),
-                stagingSizePos);
+                velPtr + (priIndex * nSamples * sizeof(float3)),
+                stagingSizeVel);
     std::memcpy(attitudeStaging->ptr(),
                 attPtr + (priIndex * nSamples * sizeof(float4)),
-                stagingSizePos);
+                stagingSizeAtt);
 }
