@@ -1,4 +1,5 @@
 /* Standard library headers */
+#include <algorithm>
 #include <cstddef>
 
 /* CUDA headers */
@@ -12,6 +13,7 @@
 #include <vector_types.h>
 
 /* Project headers */
+#include "gpumath.h"
 #include "tuning.h"
 
 /* Class header */
@@ -20,7 +22,7 @@
 #define SPEED_OF_LIGHT_F 299792458.0F
 
 /* Global variable used for storing the maximum of the window array */
-__device__ float WindowMaxValue[NUM_STREAMS];
+__device__ float2 SumResults[NUM_STREAMS];
 
 /**
  * Cuda kernel for initializing the range window array.
@@ -204,44 +206,90 @@ void referenceResponse(
 }
 
 /**
- * Cuda kernel for focusing the data to the specified grid point.
- * This kernel only does work if the window function is non-zero.
+ * Correlate the raw data with the reference response.
  */
-__global__ void focusToGridPointKernel(
-    float2 const *rawData, float2 *reference, float const *window,
-    float4 const *position, float4 const *velocity, float4 const *attitude,
-    float const *priTimes, float const *sampleTimes, float2 const *image,
-    float3 target, float modRate, float startFreq, int chunkIdx, int nPri,
-    int nSamples, int streamIdx)
+__global__ void correlateWithReference(
+    // Argument list
+    const float2 *__restrict__ raw, // Raw radar data
+    float2 *reference, // Reference response. Correlation is written back into
+                       // this array.
+    int chunkIdx, // Current chunk index
+    int nPri, // Number of PRIs
+    int nSamples // Number of samples in a PRI
+)
 {
-    float winMax = WindowMaxValue[streamIdx];
+    unsigned int const priChunkIdx = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
 
-    // Only process the chunk if the window is non-zero
-    if (winMax > WINDOW_LOWER_BOUND) {
-        // Create the reference response
-        dim3 const blockSize(ReferenceResponseKernel::BlockSizeX,
-                             ReferenceResponseKernel::BlockSizeY, 0);
-        dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
-                            (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
-        reference_response_tdc<<<gridSize, blockSize>>>(
-            reference, window, position, sampleTimes, target, modRate,
-            startFreq, chunkIdx, nPri, nSamples);
+    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE
+        && sampleIdx < nSamples) {
+        const float2 v1 = raw[priChunkIdx * nSamples + sampleIdx];
+        float2 v2 = reference[priChunkIdx * nSamples + sampleIdx];
+
+        v2.y *= -1.0; // conjugate
+        reference[priChunkIdx * nSamples + sampleIdx].x =
+            (v1.x * v2.x) - (v1.y * v2.y);
+        reference[priChunkIdx * nSamples + sampleIdx].y =
+            (v1.x * v2.y) + (v1.y * v2.x);
     }
 }
 
-/**
- * Wrapper around the cuda kernel focusToGridPointKernel
- */
-void focusToGridPoint(float2 const *rawData, float2 *reference,
-                      float const *window, float4 const *position,
-                      float4 const *velocity, float4 const *attitude,
-                      float const *priTimes, float const *sampleTimes,
-                      float2 const *image, float3 target, float modRate,
-                      float startFreq, int chunkIdx, int nPri, int nSamples,
-                      int streamIdx, cudaStream_t stream)
+__global__ void addToImage(float2 *pixel, float2 *sumVal)
 {
-    focusToGridPointKernel<<<1, 1, 0, stream>>>(
-        rawData, reference, window, position, velocity, attitude, priTimes,
-        sampleTimes, image, target, modRate, startFreq, chunkIdx, nPri,
-        nSamples, streamIdx);
+    *pixel = (*pixel) + (*sumVal);
+}
+
+/**
+ * Correlate the raw data with the reference array and put the result in the
+ * focused image
+ */
+void correlateAndSum(
+    // Data array parameters
+    float2 const *raw, // 2D, IQ data chunk
+    float2 *reference, // 2D, Reference response to correlate with
+    void *scratch, // Scratch space for sum reduction
+    size_t scratchSize, // Size of sum scratch space
+
+    // Focus image
+    float2 *pixel, // Pointer to the current pixel
+
+    // Data shape arguments
+    int chunkIdx, // Current chunk index
+    int nPri, // Number of PRIs in the full acquisition
+    int nSamples, // Number of samples per PRI
+    int streamIdx, // Stream index
+    cudaStream_t stream // Stream to run the kernel in
+)
+{
+    // First correlate the reference and raw data
+    dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 0);
+    dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
+                        (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
+    correlateWithReference<<<gridSize, blockSize, 0, stream>>>(
+        raw, reference, chunkIdx, nPri, nSamples);
+
+    // Then sum the result
+    void *devPtr;
+    cudaGetSymbolAddress(&devPtr, SumResults);
+    float2 *sumResult = reinterpret_cast<float2 *>(devPtr) + streamIdx;
+    size_t priIndex = chunkIdx * PRI_CHUNKSIZE;
+    size_t prisToSum = std::min(PRI_CHUNKSIZE, nPri - priIndex);
+    cub::DeviceReduce::Sum(scratch, scratchSize, reference, sumResult,
+                           prisToSum * nSamples, stream);
+    addToImage<<<1, 1, 0, stream>>>(pixel, sumResult);
+}
+
+/**
+ * Returns the scratch size needed in bytes for the correlateAndSum function
+ */
+size_t sumScratchSize(int nSamples)
+{
+    void *scratch = nullptr;
+    size_t scratchSize = 0;
+    float2 *dataIn = nullptr;
+    float2 dataOut = {0, 0};
+    cub::DeviceReduce::Sum(scratch, scratchSize, dataIn, &dataOut,
+                           PRI_CHUNKSIZE * nSamples);
+    return scratchSize;
 }

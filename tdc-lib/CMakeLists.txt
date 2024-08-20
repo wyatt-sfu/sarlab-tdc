@@ -13,7 +13,6 @@ find_package(spdlog CONFIG REQUIRED)
 add_library(tdc-lib STATIC
     src/tdckernels.cu
     src/tdcprocessor.cpp
-    src/cubscratch.cu
 )
 
 target_include_directories(tdc-lib PUBLIC

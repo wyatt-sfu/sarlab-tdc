@@ -21,7 +21,6 @@
 #include <spdlog/spdlog.h>
 
 /* Project headers */
-#include "cubscratch.h"
 #include "cudastream.h"
 #include "gpuarray.h"
 #include "pagelockedhost.h"
@@ -118,16 +117,24 @@ void TdcProcessor::start()
                     // Data shape arguments
                     i, nPri, nSamples, streams[streamIdx]->ptr());
 
-                // Focus the chunk of data to the specified grid point
-                focusToGridPoint(
-                    rawDataGpu[streamIdx]->ptr(),
-                    referenceGpu[streamIdx]->ptr(), windowGpu[streamIdx]->ptr(),
-                    positionGpu[streamIdx]->ptr(),
-                    velocityGpu[streamIdx]->ptr(),
-                    attitudeGpu[streamIdx]->ptr(), priTimesGpu->ptr(),
-                    sampleTimesGpu->ptr(), imageGpu->ptr(), target, modRate,
-                    startFreq, i, nPri, nSamples, static_cast<int>(streamIdx),
-                    streams[streamIdx]->ptr());
+                // Correlate the raw and reference arrays and then add the
+                // result to the focused image
+                float2 *pixelPtr = imageGpu->ptr()
+                                   + (static_cast<ptrdiff_t>(j) * gridNumCols)
+                                   + k;
+
+                correlateAndSum(
+                    // Data array parameters
+                    rawDataGpu[streamIdx]->ptr(), //
+                    referenceGpu[streamIdx]->ptr(), //
+                    sumScratchGpu[streamIdx]->ptr(), //
+                    sumScratchGpu[streamIdx]->size(), //
+
+                    // Focus image pixel
+                    pixelPtr,
+
+                    // Data shape
+                    i, nPri, nSamples, streamIdx, streams[streamIdx]->ptr());
             }
         }
         cudaDeviceSynchronize();
@@ -214,17 +221,11 @@ void TdcProcessor::allocateGpuMemory()
     log->info("... Done allocating GPU memory for focused scene");
 
     log->info("Allocating GPU scratch space ...");
-    size_t maxScratchSize =
-        CubHelpers::floatMaxScratchSize(PRI_CHUNKSIZE * nSamples);
-    size_t sumScratchSize =
-        CubHelpers::float2SumScratchSize(PRI_CHUNKSIZE * nSamples);
-
-    log->info("Maximum scratch size: {}", maxScratchSize);
-    log->info("Sum scratch size: {}", sumScratchSize);
+    size_t scratchSize = sumScratchSize(nSamples);
+    log->info("Sum scratch size: {}", scratchSize);
 
     for (int i = 0; i < NUM_STREAMS; ++i) {
-        maxScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(maxScratchSize);
-        sumScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(sumScratchSize);
+        sumScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(scratchSize);
     }
 
     rangeWindowGpu = std::make_unique<GpuArray<float>>(nSamples);

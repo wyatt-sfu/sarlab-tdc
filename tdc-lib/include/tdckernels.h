@@ -64,14 +64,30 @@ void referenceResponse(
 );
 
 /**
- * Process the next chunk of data and focus it to the specified grid location.
+ * Correlate the raw data with the reference array and put the result in the
+ * focused image
  */
-void focusToGridPoint(float2 const *rawData, float2 *reference,
-                      float const *window, float4 const *position,
-                      float4 const *velocity, float4 const *attitude,
-                      float const *priTimes, float const *sampleTimes,
-                      float2 const *image, float3 target, float modRate,
-                      float startFreq, int chunkIdx, int nPri, int nSamples,
-                      int streamIdx, cudaStream_t stream);
+void correlateAndSum(
+    // Data array parameters
+    float2 const *raw, // 2D, IQ data chunk
+    float2 *reference, // 2D, Reference response to correlate with
+    void *scratch, // Scratch space for sum reduction
+    size_t scratchSize, // Size of sum scratch space
+
+    // Focus image
+    float2 *pixel, // Pointer to the current pixel
+
+    // Data shape arguments
+    int chunkIdx, // Current chunk index
+    int nPri, // Number of PRIs in the full acquisition
+    int nSamples, // Number of samples per PRI
+    int streamIdx, // Stream index
+    cudaStream_t stream // Stream to run the kernel in
+);
+
+/**
+ * Returns the scratch size needed in bytes for the correlateAndSum function
+ */
+size_t sumScratchSize(int nSamples);
 
 #endif // TDCKERNELS_H

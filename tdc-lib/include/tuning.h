@@ -45,3 +45,8 @@ namespace ReferenceResponseKernel {
 constexpr unsigned int BlockSizeX = 16;
 constexpr unsigned int BlockSizeY = 16;
 }
+
+namespace CorrelateKernel {
+constexpr unsigned int BlockSizeX = 16;
+constexpr unsigned int BlockSizeY = 16;
+}

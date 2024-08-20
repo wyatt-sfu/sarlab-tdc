@@ -156,7 +156,6 @@ private:
     std::array<GpuArrayPtr<float2>, NUM_STREAMS> rawDataGpu;
     std::array<GpuArrayPtr<float2>, NUM_STREAMS> referenceGpu;
     std::array<GpuArrayPtr<float>, NUM_STREAMS> windowGpu;
-    std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> maxScratchGpu;
     std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> sumScratchGpu;
     std::array<GpuArrayPtr<float3>, NUM_STREAMS> positionGpu;
     std::array<GpuArrayPtr<float3>, NUM_STREAMS> velocityGpu;
