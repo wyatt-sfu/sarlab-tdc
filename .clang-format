@@ -10,7 +10,7 @@ AccessModifierOffset: -4
 SpaceAfterCStyleCast: true
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Mozilla
-ColumnLimit: 80
+ColumnLimit: 88
 ReflowComments: true
 PenaltyBreakComment: 0
 ConstructorInitializerAllOnOneLineOrOnePerLine: true

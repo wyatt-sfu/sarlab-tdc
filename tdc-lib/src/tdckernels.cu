@@ -30,7 +30,7 @@ __device__ float2 SumResults[NUM_STREAMS];
  * rgWin: 1D array that will be filled with the range window weights
  * nSamples: Number of samples
  */
-__global__ void initRangeWindowKernel(float *rgWin, int nSamples)
+__global__ void initRangeWindowKernel(float *__restrict__ rgWin, int nSamples)
 {
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     if (sampleIdx >= nSamples) {
@@ -48,7 +48,7 @@ __global__ void initRangeWindowKernel(float *rgWin, int nSamples)
  * rgWin: 1D array that will be filled with the range window weights
  * nSamples: Number of samples
  */
-void initRangeWindow(float *rgWin, int nSamples)
+void initRangeWindow(float *__restrict__ rgWin, int nSamples)
 {
     dim3 const blockSize(32, 1, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x, 1, 1);
@@ -67,12 +67,13 @@ __global__ void dopplerCentroid(float4 const *velocity, float4 const *attitude,
  */
 __global__ void createWindowKernel(
     // Window arrays
-    float *window, // 2D full window to apply to raw data chunk
-    float const *rangeWindow, // 1D range window
+    float *__restrict__ window, // 2D full window to apply to raw data chunk
+    float const *__restrict__ rangeWindow, // 1D range window
 
     // Positioning data
-    float3 const *velocity, // [m] 2D, x,y,z velocity at each PRI/sample
-    float4 const *attitude, // 2D quaternion at each PRI/sample
+    float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each
+                                         // PRI/sample
+    float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
@@ -88,8 +89,7 @@ __global__ void createWindowKernel(
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
 
-    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE
-        && sampleIdx < nSamples) {
+    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamples) {
         float lambdaFac = 2.0f / lambda;
         // Compute the Doppler centroid for this pulse
 
@@ -103,12 +103,12 @@ __global__ void createWindowKernel(
  */
 void createWindow(
     // Window arrays
-    float *window, // 2D full window to apply to raw data chunk
-    float const *rangeWindow, // 1D range window
+    float *__restrict__ window, // 2D full window to apply to raw data chunk
+    float const *__restrict__ rangeWindow, // 1D range window
 
     // Positioning data
-    float3 const *velocity, // [m] 2D, x,y,z velocity at each PRI/sample
-    float4 const *attitude, // 2D quaternion at each PRI/sample
+    float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each PRI/sample
+    float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
@@ -125,8 +125,8 @@ void createWindow(
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
     createWindowKernel<<<gridSize, blockSize, 0, stream>>>(
-        window, rangeWindow, velocity, attitude, lambda, dopplerBw, chunkIdx,
-        nPri, nSamples);
+        window, rangeWindow, velocity, attitude, lambda, dopplerBw, chunkIdx, nPri,
+        nSamples);
 }
 
 /**
@@ -135,10 +135,10 @@ void createWindow(
  */
 __global__ void referenceResponseKernel(
     // Data array parameters
-    float2 *reference, // 2D, IQ data to contain reference data
-    float const *window, // 2D full window to apply to raw data chunk
-    float3 const *position, // [m] 2D, x,y,z position at each PRI/sample
-    float const *sampleTimes, // [s] 1D, Time of each sample in a PRI
+    float2 *__restrict__ reference, // 2D, IQ data to contain reference data
+    float const *__restrict__ window, // 2D full window to apply to raw data chunk
+    float3 const *__restrict__ position, // [m] 2D, x,y,z position at each PRI/sample
+    float const *__restrict__ sampleTimes, // [s] 1D, Time of each sample in a PRI
     float3 target, // [m] Location on the focus grid
 
     // Radar operating parameters
@@ -155,10 +155,8 @@ __global__ void referenceResponseKernel(
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
 
-    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE
-        && sampleIdx < nSamples) {
-        const float3 phase_centre =
-            position[priChunkIdx * nSamples + sampleIdx];
+    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamples) {
+        const float3 phase_centre = position[priChunkIdx * nSamples + sampleIdx];
         const float winVal = window[priChunkIdx * nSamples + sampleIdx];
         float dist_to_target =
             norm3df(phase_centre.x - target.x, phase_centre.y - target.y,
@@ -177,10 +175,10 @@ __global__ void referenceResponseKernel(
 
 void referenceResponse(
     // Data array parameters
-    float2 *reference, // 2D, IQ data to contain reference data
-    float const *window, // 2D full window to apply to raw data chunk
-    float3 const *position, // [m] 2D, x,y,z position at each PRI/sample
-    float const *sampleTimes, // [s] 1D, Time of each sample in a PRI
+    float2 *__restrict__ reference, // 2D, IQ data to contain reference data
+    float const *__restrict__ window, // 2D full window to apply to raw data chunk
+    float3 const *__restrict__ position, // [m] 2D, x,y,z position at each PRI/sample
+    float const *__restrict__ sampleTimes, // [s] 1D, Time of each sample in a PRI
     float3 target, // [m] Location on the focus grid
 
     // Radar operating parameters
@@ -196,13 +194,12 @@ void referenceResponse(
 {
     dim3 const refBlockSize(ReferenceResponseKernel::BlockSizeX,
                             ReferenceResponseKernel::BlockSizeY, 1);
-    dim3 const refGridSize(
-        (nSamples + refBlockSize.x - 1) / refBlockSize.x,
-        (PRI_CHUNKSIZE + refBlockSize.y - 1) / refBlockSize.y, 1);
+    dim3 const refGridSize((nSamples + refBlockSize.x - 1) / refBlockSize.x,
+                           (PRI_CHUNKSIZE + refBlockSize.y - 1) / refBlockSize.y, 1);
 
     referenceResponseKernel<<<refGridSize, refBlockSize, 0, stream>>>(
-        reference, window, position, sampleTimes, target, startFreq, modRate,
-        chunkIdx, nPri, nSamples);
+        reference, window, position, sampleTimes, target, startFreq, modRate, chunkIdx,
+        nPri, nSamples);
 }
 
 /**
@@ -211,8 +208,8 @@ void referenceResponse(
 __global__ void correlateWithReference(
     // Argument list
     const float2 *__restrict__ raw, // Raw radar data
-    float2 *reference, // Reference response. Correlation is written back into
-                       // this array.
+    float2 *__restrict__ reference, // Reference response. Correlation is
+                                    // written back into this array.
     int chunkIdx, // Current chunk index
     int nPri, // Number of PRIs
     int nSamples // Number of samples in a PRI
@@ -222,20 +219,17 @@ __global__ void correlateWithReference(
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
 
-    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE
-        && sampleIdx < nSamples) {
+    if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamples) {
         const float2 v1 = raw[priChunkIdx * nSamples + sampleIdx];
         float2 v2 = reference[priChunkIdx * nSamples + sampleIdx];
 
         v2.y *= -1.0; // conjugate
-        reference[priChunkIdx * nSamples + sampleIdx].x =
-            (v1.x * v2.x) - (v1.y * v2.y);
-        reference[priChunkIdx * nSamples + sampleIdx].y =
-            (v1.x * v2.y) + (v1.y * v2.x);
+        reference[priChunkIdx * nSamples + sampleIdx].x = (v1.x * v2.x) - (v1.y * v2.y);
+        reference[priChunkIdx * nSamples + sampleIdx].y = (v1.x * v2.y) + (v1.y * v2.x);
     }
 }
 
-__global__ void addToImage(float2 *pixel, float2 *sumVal)
+__global__ void addToImage(float2 *__restrict__ pixel, float2 *__restrict__ sumVal)
 {
     *pixel = (*pixel) + (*sumVal);
 }
@@ -246,13 +240,13 @@ __global__ void addToImage(float2 *pixel, float2 *sumVal)
  */
 void correlateAndSum(
     // Data array parameters
-    float2 const *raw, // 2D, IQ data chunk
-    float2 *reference, // 2D, Reference response to correlate with
-    void *scratch, // Scratch space for sum reduction
+    float2 const *__restrict__ raw, // 2D, IQ data chunk
+    float2 *__restrict__ reference, // 2D, Reference response to correlate with
+    void *__restrict__ scratch, // Scratch space for sum reduction
     size_t scratchSize, // Size of sum scratch space
 
     // Focus image
-    float2 *pixel, // Pointer to the current pixel
+    float2 *__restrict__ pixel, // Pointer to the current pixel
 
     // Data shape arguments
     int chunkIdx, // Current chunk index
@@ -263,12 +257,11 @@ void correlateAndSum(
 )
 {
     // First correlate the reference and raw data
-    dim3 const blockSize(CorrelateKernel::BlockSizeX,
-                         CorrelateKernel::BlockSizeY, 1);
+    dim3 const blockSize(CorrelateKernel::BlockSizeX, CorrelateKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
-    correlateWithReference<<<gridSize, blockSize, 0, stream>>>(
-        raw, reference, chunkIdx, nPri, nSamples);
+    correlateWithReference<<<gridSize, blockSize, 0, stream>>>(raw, reference, chunkIdx,
+                                                               nPri, nSamples);
 
     // Then sum the result
     void *devPtr;
