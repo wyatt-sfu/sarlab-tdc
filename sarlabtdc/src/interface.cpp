@@ -16,5 +16,6 @@ PYBIND11_MODULE(_sarlabtdc, m)
         .def(py::init<int>())
         .def("start", &TdcProcessorWrapper::start)
         .def("setRawData", &TdcProcessorWrapper::setRawData)
-        .def("setFocusGrid", &TdcProcessorWrapper::setFocusGrid);
+        .def("setFocusGrid", &TdcProcessorWrapper::setFocusGrid)
+        .def("getFocusedImage", &TdcProcessorWrapper::getFocusedImage);
 }

@@ -32,6 +32,7 @@ public:
         py::array_t<float, py::array::c_style> attitude, float modRate,
         float startFreq);
     void setFocusGrid(py::array_t<float, py::array::c_style> focusGrid);
+    py::array_t<std::complex<float>, py::array::c_style> getFocusedImage();
 
 private:
     /* Methods */
@@ -47,6 +48,11 @@ private:
     py::array_t<float, py::array::c_style> position;
     py::array_t<float, py::array::c_style> velocity;
     py::array_t<float, py::array::c_style> attitude;
+    py::array_t<float, py::array::c_style> focusGrid;
+
+    /* Focus grid shape */
+    int gridNumRows;
+    int gridNumCols;
 };
 
 #endif // TDCPROCESSOR_WRAPPER_H

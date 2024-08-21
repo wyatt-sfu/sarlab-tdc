@@ -115,14 +115,17 @@ void TdcProcessorWrapper::setRawData(
 void TdcProcessorWrapper::setFocusGrid(
     py::array_t<float, py::array::c_style> focusGrid)
 {
+    // Stops garbage collection
+    this->focusGrid = focusGrid;
+
     auto gridInfo = focusGrid.request();
     if (gridInfo.ndim != 3) {
         throw std::runtime_error("focusGrid must be 3D");
     }
 
     // Get array shape
-    int numRows = gridInfo.shape[0];
-    int numCols = gridInfo.shape[1];
+    gridNumRows = gridInfo.shape[0];
+    gridNumCols = gridInfo.shape[1];
 
     // Check the array shape
     if (gridInfo.shape[2] != 3) {
@@ -133,7 +136,17 @@ void TdcProcessorWrapper::setFocusGrid(
     auto *gridPtr = reinterpret_cast<float const *>(gridInfo.ptr);
 
     // Call the underlying C++ function
-    tdcProc->setFocusGrid(gridPtr, numRows, numCols);
+    tdcProc->setFocusGrid(gridPtr, gridNumRows, gridNumCols);
+}
+
+py::array_t<std::complex<float>, py::array::c_style> TdcProcessorWrapper::
+    getFocusedImage()
+{
+    float2 const *img = tdcProc->imageBuffer();
+    auto result = py::array_t<std::complex<float>>({gridNumRows, gridNumCols});
+    std::complex<float> *pyData = result.mutable_data(0);
+    memcpy(pyData, img, gridNumRows * gridNumCols * sizeof(std::complex<float>));
+    return result;
 }
 
 void TdcProcessorWrapper::setupLogging()
