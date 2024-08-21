@@ -123,7 +123,6 @@ void TdcProcessor::start()
                 float2 *pixelPtr = imageGpu->ptr()
                                    + (static_cast<ptrdiff_t>(j) * gridNumCols)
                                    + k;
-
                 correlateAndSum(
                     // Data array parameters
                     rawDataGpu[streamIdx]->ptr(), //
@@ -135,7 +134,8 @@ void TdcProcessor::start()
                     pixelPtr,
 
                     // Data shape
-                    i, nPri, nSamples, streamIdx, streams[streamIdx]->ptr());
+                    i, nPri, nSamples, static_cast<int>(streamIdx),
+                    streams[streamIdx]->ptr());
             }
         }
         cudaDeviceSynchronize();
@@ -197,6 +197,11 @@ void TdcProcessor::setLoggerSinks(const std::vector<spdlog::sink_ptr> &sinks)
     tdcLogger->flush_on(spdlog::level::info);
     tdcLogger->info("Completed logging setup");
     log = spdlog::get("TDCPROC");
+}
+
+float2 const *TdcProcessor::imageBuffer() const
+{
+    return focusedImage.get();
 }
 
 void TdcProcessor::allocateGpuMemory()

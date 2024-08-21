@@ -29,6 +29,7 @@
  * 1) Create an instance of the class
  * 2) Initialize with setRawData() and setFocusGrid()
  * 3) Call start()
+ * 4) Call imageBuffer() to get a pointer to the focused image data
  *
  * Coordinate system definition:
  * Body Coordinate System:
@@ -116,6 +117,13 @@ public:
      * Logging is only enabled after this function is called.
      */
     void setLoggerSinks(const std::vector<spdlog::sink_ptr> &sinks);
+
+    /**
+     * Returns a pointer to the focused image buffer. This should be called
+     * after start() as finished. The TdcProcessor class retains ownership
+     * of the buffer.
+     */
+    float2 const *imageBuffer() const;
 
 private:
     /* Methods */
