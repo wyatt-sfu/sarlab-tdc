@@ -101,7 +101,7 @@ void TdcProcessor::start()
                     // Data shape arguments
                     i, nPri, nSamples, streams[streamIdx]->ptr());
 
-                float3 target = focusGrid[(j * gridNumCols) + i];
+                float3 target = focusGrid[(j * gridNumCols) + k];
 
                 // Create the reference response for this grid location
                 referenceResponse(

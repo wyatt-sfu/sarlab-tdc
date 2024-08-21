@@ -50,8 +50,8 @@ __global__ void initRangeWindowKernel(float *rgWin, int nSamples)
  */
 void initRangeWindow(float *rgWin, int nSamples)
 {
-    dim3 const blockSize(32, 0, 0);
-    dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x, 0, 0);
+    dim3 const blockSize(32, 1, 1);
+    dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x, 1, 1);
     initRangeWindowKernel<<<gridSize, blockSize>>>(rgWin, nSamples);
 }
 
@@ -121,9 +121,9 @@ void createWindow(
     cudaStream_t stream // Stream to run the kernel in
 )
 {
-    dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 0);
+    dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
-                        (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
+                        (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
     createWindowKernel<<<gridSize, blockSize, 0, stream>>>(
         window, rangeWindow, velocity, attitude, lambda, dopplerBw, chunkIdx,
         nPri, nSamples);
@@ -195,10 +195,10 @@ void referenceResponse(
 )
 {
     dim3 const refBlockSize(ReferenceResponseKernel::BlockSizeX,
-                            ReferenceResponseKernel::BlockSizeY, 0);
+                            ReferenceResponseKernel::BlockSizeY, 1);
     dim3 const refGridSize(
         (nSamples + refBlockSize.x - 1) / refBlockSize.x,
-        (PRI_CHUNKSIZE + refBlockSize.y - 1) / refBlockSize.y, 0);
+        (PRI_CHUNKSIZE + refBlockSize.y - 1) / refBlockSize.y, 1);
 
     referenceResponseKernel<<<refGridSize, refBlockSize, 0, stream>>>(
         reference, window, position, sampleTimes, target, startFreq, modRate,
@@ -263,9 +263,10 @@ void correlateAndSum(
 )
 {
     // First correlate the reference and raw data
-    dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 0);
+    dim3 const blockSize(CorrelateKernel::BlockSizeX,
+                         CorrelateKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
-                        (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 0);
+                        (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
     correlateWithReference<<<gridSize, blockSize, 0, stream>>>(
         raw, reference, chunkIdx, nPri, nSamples);
 

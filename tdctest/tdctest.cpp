@@ -16,7 +16,7 @@ TEST(TdcProcessorTest, BasicTest)
     // Setup the focus grid
     int nRows = 150;
     int nCols = 150;
-    int gridNumElem = nRows * nCols * 4;
+    int gridNumElem = nRows * nCols * 3;
     std::vector<float> grid(gridNumElem);
     tdc.setFocusGrid(grid.data(), nRows, nCols);
 
@@ -32,7 +32,7 @@ TEST(TdcProcessorTest, BasicTest)
     std::vector<float> attitude(rawNumElem * 4);
     tdc.setRawData(raw.data(), priTimes.data(), sampleTimes.data(),
                    position.data(), velocity.data(), attitude.data(), nPri,
-                   nSamples, 0.0, 0.0);
+                   nSamples, 1.0, 1.0);
 
     // Setup logging
     auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
