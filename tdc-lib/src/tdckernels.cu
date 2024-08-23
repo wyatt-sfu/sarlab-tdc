@@ -71,8 +71,7 @@ __global__ void createWindowKernel(
     float const *__restrict__ rangeWindow, // 1D range window
 
     // Positioning data
-    float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each
-                                         // PRI/sample
+    float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
 
     // Radar parameters
@@ -154,22 +153,23 @@ __global__ void referenceResponseKernel(
     unsigned int const priChunkIdx = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
+    const ptrdiff_t elementIdx =
+        static_cast<ptrdiff_t>(priChunkIdx) * nSamples + sampleIdx;
 
     if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamples) {
-        const float3 phase_centre = position[priChunkIdx * nSamples + sampleIdx];
-        const float winVal = window[priChunkIdx * nSamples + sampleIdx];
+
+        const float3 phase_centre = position[elementIdx];
+        const float winVal = window[elementIdx];
         float dist_to_target =
             norm3df(phase_centre.x - target.x, phase_centre.y - target.y,
                     phase_centre.z - target.z);
 
         const float freq = fmaf(sampleTimes[sampleIdx], modRate, startFreq);
-        const float phi =
-            -4.0F * CUDART_PI_F * dist_to_target * (freq / SPEED_OF_LIGHT_F);
+        const float phi = -4.0F * dist_to_target * (freq / SPEED_OF_LIGHT_F);
         float sinval = 0.0;
         float cosval = 0.0;
-        sincosf(phi, &sinval, &cosval);
-        reference[priChunkIdx * nSamples + sampleIdx] = {cosval * winVal,
-                                                         sinval * winVal};
+        sincospif(phi, &sinval, &cosval);
+        reference[elementIdx] = {cosval * winVal, sinval * winVal};
     }
 }
 
@@ -218,14 +218,16 @@ __global__ void correlateWithReference(
     unsigned int const priChunkIdx = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
+    const ptrdiff_t elementIdx =
+        static_cast<ptrdiff_t>(priChunkIdx) * nSamples + sampleIdx;
 
     if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamples) {
-        const float2 v1 = raw[priChunkIdx * nSamples + sampleIdx];
-        float2 v2 = reference[priChunkIdx * nSamples + sampleIdx];
+        const float2 v1 = raw[elementIdx];
+        float2 v2 = reference[elementIdx];
 
         v2.y *= -1.0; // conjugate
-        reference[priChunkIdx * nSamples + sampleIdx].x = (v1.x * v2.x) - (v1.y * v2.y);
-        reference[priChunkIdx * nSamples + sampleIdx].y = (v1.x * v2.y) + (v1.y * v2.x);
+        reference[elementIdx].x = (v1.x * v2.x) - (v1.y * v2.y);
+        reference[elementIdx].y = (v1.x * v2.y) + (v1.y * v2.x);
     }
 }
 
