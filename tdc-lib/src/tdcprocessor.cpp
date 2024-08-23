@@ -139,6 +139,16 @@ void TdcProcessor::start()
                     streams[streamIdx]->ptr());
             }
         }
+
+        // Sanity check for any cuda runtime errors
+        // At this point there really shouldn't be any errors so I just check
+        // after each chunk is processed.
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            throw std::runtime_error(
+                fmt::format("Cuda runtime error occured during processing: {}",
+                            cudaGetErrorString(err)));
+        }
         cudaDeviceSynchronize();
     }
 
