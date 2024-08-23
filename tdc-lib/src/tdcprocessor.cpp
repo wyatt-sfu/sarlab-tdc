@@ -22,10 +22,9 @@
 #include <spdlog/spdlog.h>
 
 /* Project headers */
-#include "cudastream.h"
 #include "gpuarray.h"
-#include "pagelockedhost.h"
 #include "tdckernels.h"
+#include "tuning.h"
 
 /* Class header */
 #include "tdcprocessor.h"
@@ -42,12 +41,6 @@ TdcProcessor::TdcProcessor(int gpuNum)
         throw std::runtime_error(
             fmt::format("Failed to set cuda device: {}", cudaGetErrorString(err)));
     }
-
-    // Create the stream objects for concurrency
-    log->info("Creating CUDA streams");
-    for (int i = 0; i < NUM_STREAMS; ++i) {
-        streams[i] = std::make_unique<CudaStream>();
-    }
 }
 
 TdcProcessor::~TdcProcessor()
@@ -63,26 +56,18 @@ void TdcProcessor::start()
     allocateHostMemory();
     initGpuData();
 
+    // The data is chunked so that large data collections can still be processed
+    // without running out of RAM on the GPU. Useful for laptops.
     nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
-    size_t streamIdx = 0;
-    size_t nextStreamIdx = 1;
 
     // Initialize the range window
     initRangeWindow(rangeWindowGpu->ptr(), nSamples);
-
-    // Before starting the loop we need to transfer the data for the first chunk
-    transferNextChunk(0, streamIdx);
     cudaDeviceSynchronize();
 
     // Start looping through each chunk of data
     for (int i = 0; i < nChunks; ++i) {
-        streamIdx = i % NUM_STREAMS;
-        nextStreamIdx = (i + 1) % NUM_STREAMS;
-
         // Transfer the next chunk of data while we process the current chunk
-        if (i + 1 < nChunks) {
-            transferNextChunk(i + 1, nextStreamIdx);
-        }
+        transferNextChunk(i);
         log->info("Processing chunk {} of {}", i + 1, nChunks);
 
         for (int j = 0; j < gridNumRows; ++j) {
@@ -90,27 +75,25 @@ void TdcProcessor::start()
                 // Create the window array
                 createWindow(
                     // Window arrays
-                    windowGpu[streamIdx]->ptr(), //
-                    rangeWindowGpu->ptr(), //
+                    windowGpu->ptr(), rangeWindowGpu->ptr(), //
 
                     // Position related arguments
-                    velocityGpu[streamIdx]->ptr(), //
-                    attitudeGpu[streamIdx]->ptr(), //
+                    velocityGpu->ptr(), attitudeGpu->ptr(), //
 
                     // Radar parameters
                     1.0F, 1.0F,
 
                     // Data shape arguments
-                    i, nPri, nSamples, streams[streamIdx]->ptr());
+                    i, nPri, nSamples);
 
                 float3 target = focusGrid[(j * gridNumCols) + k];
 
                 // Create the reference response for this grid location
                 referenceResponse(
                     // Data array parameters
-                    referenceGpu[streamIdx]->ptr(), //
-                    windowGpu[streamIdx]->ptr(), //
-                    positionGpu[streamIdx]->ptr(), //
+                    referenceGpu->ptr(), //
+                    windowGpu->ptr(), //
+                    positionGpu->ptr(), //
                     sampleTimesGpu->ptr(), //
                     target, //
 
@@ -118,7 +101,7 @@ void TdcProcessor::start()
                     startFreq, modRate,
 
                     // Data shape arguments
-                    i, nPri, nSamples, streams[streamIdx]->ptr());
+                    i, nPri, nSamples);
 
                 // Correlate the raw and reference arrays and then add the
                 // result to the focused image
@@ -126,17 +109,16 @@ void TdcProcessor::start()
                     imageGpu->ptr() + (static_cast<ptrdiff_t>(j) * gridNumCols) + k;
                 correlateAndSum(
                     // Data array parameters
-                    rawDataGpu[streamIdx]->ptr(), //
-                    referenceGpu[streamIdx]->ptr(), //
-                    sumScratchGpu[streamIdx]->ptr(), //
-                    sumScratchGpu[streamIdx]->size(), //
+                    rawDataGpu->ptr(), //
+                    referenceGpu->ptr(), //
+                    sumScratchGpu->ptr(), //
+                    sumScratchGpu->size(), //
 
                     // Focus image pixel
                     pixelPtr,
 
                     // Data shape
-                    i, nPri, nSamples, static_cast<int>(streamIdx),
-                    streams[streamIdx]->ptr());
+                    i, nPri, nSamples);
             }
         }
 
@@ -219,14 +201,12 @@ float2 const *TdcProcessor::imageBuffer() const
 void TdcProcessor::allocateGpuMemory()
 {
     log->info("Allocating GPU memory for raw data ...");
-    for (int i = 0; i < NUM_STREAMS; ++i) {
-        rawDataGpu[i] = std::make_unique<GpuArray<float2>>(PRI_CHUNKSIZE * nSamples);
-        referenceGpu[i] = std::make_unique<GpuArray<float2>>(PRI_CHUNKSIZE * nSamples);
-        windowGpu[i] = std::make_unique<GpuArray<float>>(PRI_CHUNKSIZE * nSamples);
-        positionGpu[i] = std::make_unique<GpuArray<float3>>(PRI_CHUNKSIZE * nSamples);
-        velocityGpu[i] = std::make_unique<GpuArray<float3>>(PRI_CHUNKSIZE * nSamples);
-        attitudeGpu[i] = std::make_unique<GpuArray<float4>>(PRI_CHUNKSIZE * nSamples);
-    }
+    rawDataGpu = std::make_unique<GpuArray<float2>>(PRI_CHUNKSIZE * nSamples);
+    referenceGpu = std::make_unique<GpuArray<float2>>(PRI_CHUNKSIZE * nSamples);
+    windowGpu = std::make_unique<GpuArray<float>>(PRI_CHUNKSIZE * nSamples);
+    positionGpu = std::make_unique<GpuArray<float3>>(PRI_CHUNKSIZE * nSamples);
+    velocityGpu = std::make_unique<GpuArray<float3>>(PRI_CHUNKSIZE * nSamples);
+    attitudeGpu = std::make_unique<GpuArray<float4>>(PRI_CHUNKSIZE * nSamples);
 
     priTimesGpu = std::make_unique<GpuArray<float>>(nPri);
     sampleTimesGpu = std::make_unique<GpuArray<float>>(nSamples);
@@ -239,11 +219,7 @@ void TdcProcessor::allocateGpuMemory()
     log->info("Allocating GPU scratch space ...");
     size_t scratchSize = sumScratchSize(nSamples);
     log->info("Sum scratch size: {}", scratchSize);
-
-    for (int i = 0; i < NUM_STREAMS; ++i) {
-        sumScratchGpu[i] = std::make_unique<GpuArray<uint8_t>>(scratchSize);
-    }
-
+    sumScratchGpu = std::make_unique<GpuArray<uint8_t>>(scratchSize);
     rangeWindowGpu = std::make_unique<GpuArray<float>>(nSamples);
     log->info("... Done allocating GPU scratch space");
 }
@@ -286,27 +262,21 @@ void TdcProcessor::initGpuData()
     log->info("... Done initializing range window");
 }
 
-void TdcProcessor::transferNextChunk(int chunkIdx, size_t streamIdx)
+void TdcProcessor::transferNextChunk(int chunkIdx)
 {
+    log->info("Transferring chunk {} of {}", chunkIdx + 1, nChunks);
     stageNextChunk(chunkIdx);
-    rawDataGpu[streamIdx]->hostToDeviceAsync(
-        reinterpret_cast<const float2 *>(rawStaging->ptr()), streams[streamIdx]->ptr());
-    positionGpu[streamIdx]->hostToDeviceAsync(
-        reinterpret_cast<const float3 *>(positionStaging->ptr()),
-        streams[streamIdx]->ptr());
-    velocityGpu[streamIdx]->hostToDeviceAsync(
-        reinterpret_cast<const float3 *>(velocityStaging->ptr()),
-        streams[streamIdx]->ptr());
-    attitudeGpu[streamIdx]->hostToDeviceAsync(
-        reinterpret_cast<const float4 *>(attitudeStaging->ptr()),
-        streams[streamIdx]->ptr());
+    rawDataGpu->hostToDevice(reinterpret_cast<const float2 *>(rawStaging->ptr()));
+    positionGpu->hostToDevice(reinterpret_cast<const float3 *>(positionStaging->ptr()));
+    velocityGpu->hostToDevice(reinterpret_cast<const float3 *>(velocityStaging->ptr()));
+    attitudeGpu->hostToDevice(reinterpret_cast<const float4 *>(attitudeStaging->ptr()));
 }
 
 void TdcProcessor::stageNextChunk(int chunkIdx)
 {
     // Transfer the next chunk of data into the staging area in page locked
-    // memory. This is so that we can concurrently transfer data to the GPU
-    // while processing is occuring.
+    // memory. This simplifies the memory transfers and allows for
+    // experimentation with cuda streams and asynchronous memory transfers.
     size_t priIndex = chunkIdx * PRI_CHUNKSIZE;
     size_t prisToStage = std::min(PRI_CHUNKSIZE, nPri - priIndex);
     size_t stagingSizeData = prisToStage * nSamples * sizeof(float2);
@@ -318,8 +288,6 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
     const auto *posPtr = reinterpret_cast<const uint8_t *>(position);
     const auto *velPtr = reinterpret_cast<const uint8_t *>(velocity);
     const auto *attPtr = reinterpret_cast<const uint8_t *>(attitude);
-
-    log->info("Staging chunk {} of {}", chunkIdx + 1, nChunks);
 
     std::memcpy(rawStaging->ptr(), rawPtr + (priIndex * nSamples * sizeof(float2)),
                 stagingSizeData);

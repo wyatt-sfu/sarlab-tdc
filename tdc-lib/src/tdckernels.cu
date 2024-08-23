@@ -22,7 +22,7 @@
 #define SPEED_OF_LIGHT_F 299792458.0F
 
 /* Global variable used for storing the maximum of the window array */
-__device__ float2 SumResults[NUM_STREAMS];
+__device__ float2 SumResults;
 
 /**
  * Cuda kernel for initializing the range window array.
@@ -116,14 +116,13 @@ void createWindow(
     // Data shape arguments
     int chunkIdx, // Current chunk index
     int nPri, // Number of PRIs in the full acquisition
-    int nSamples, // Number of samples per PRI
-    cudaStream_t stream // Stream to run the kernel in
+    int nSamples // Number of samples per PRI
 )
 {
     dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
-    createWindowKernel<<<gridSize, blockSize, 0, stream>>>(
+    createWindowKernel<<<gridSize, blockSize>>>(
         window, rangeWindow, velocity, attitude, lambda, dopplerBw, chunkIdx, nPri,
         nSamples);
 }
@@ -188,8 +187,7 @@ void referenceResponse(
     // Data shape arguments
     int chunkIdx, // Current chunk index
     int nPri, // Number of PRIs in the full acquisition
-    int nSamples, // Number of samples per PRI
-    cudaStream_t stream // Stream to run the kernel in
+    int nSamples // Number of samples per PRI
 )
 {
     dim3 const refBlockSize(ReferenceResponseKernel::BlockSizeX,
@@ -197,7 +195,7 @@ void referenceResponse(
     dim3 const refGridSize((nSamples + refBlockSize.x - 1) / refBlockSize.x,
                            (PRI_CHUNKSIZE + refBlockSize.y - 1) / refBlockSize.y, 1);
 
-    referenceResponseKernel<<<refGridSize, refBlockSize, 0, stream>>>(
+    referenceResponseKernel<<<refGridSize, refBlockSize>>>(
         reference, window, position, sampleTimes, target, startFreq, modRate, chunkIdx,
         nPri, nSamples);
 }
@@ -253,27 +251,25 @@ void correlateAndSum(
     // Data shape arguments
     int chunkIdx, // Current chunk index
     int nPri, // Number of PRIs in the full acquisition
-    int nSamples, // Number of samples per PRI
-    int streamIdx, // Stream index
-    cudaStream_t stream // Stream to run the kernel in
+    int nSamples // Number of samples per PRI
 )
 {
     // First correlate the reference and raw data
     dim3 const blockSize(CorrelateKernel::BlockSizeX, CorrelateKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
-    correlateWithReference<<<gridSize, blockSize, 0, stream>>>(raw, reference, chunkIdx,
+    correlateWithReference<<<gridSize, blockSize>>>(raw, reference, chunkIdx,
                                                                nPri, nSamples);
 
     // Then sum the result
     void *devPtr;
     cudaGetSymbolAddress(&devPtr, SumResults);
-    float2 *sumResult = reinterpret_cast<float2 *>(devPtr) + streamIdx;
+    float2 *sumResult = reinterpret_cast<float2 *>(devPtr);
     size_t priIndex = chunkIdx * PRI_CHUNKSIZE;
     size_t prisToSum = std::min(PRI_CHUNKSIZE, nPri - priIndex);
     cub::DeviceReduce::Sum(scratch, scratchSize, reference, sumResult,
-                           prisToSum * nSamples, stream);
-    addToImage<<<1, 1, 0, stream>>>(pixel, sumResult);
+                           prisToSum * nSamples);
+    addToImage<<<1, 1>>>(pixel, sumResult);
 }
 
 /**

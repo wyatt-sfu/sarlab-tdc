@@ -15,12 +15,6 @@
 constexpr size_t PRI_CHUNKSIZE = 128;
 
 /**
- * Controls how many streams are used at once. This should probably be set to
- * either 1 or 2.
- */
-constexpr size_t NUM_STREAMS = 2;
-
-/**
  * If the maximum value in the window array for a specific chunk is below this
  * value then it will not be processed.
  */

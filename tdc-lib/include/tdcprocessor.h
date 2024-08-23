@@ -2,9 +2,7 @@
 #define TDCPROCESSOR_H
 
 /* Standard library headers */
-#include <array>
 #include <complex>
-#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -17,10 +15,8 @@
 #include <spdlog/logger.h>
 
 /* Project headers */
-#include "cudastream.h"
 #include "gpuarray.h"
 #include "pagelockedhost.h"
-#include "tuning.h"
 
 /**
  * Time-domain correlation SAR processor.
@@ -130,7 +126,7 @@ private:
     void allocateGpuMemory();
     void allocateHostMemory();
     void initGpuData();
-    void transferNextChunk(int chunkIdx, size_t streamIdx);
+    void transferNextChunk(int chunkIdx);
     void stageNextChunk(int chunkIdx);
 
     /* Raw data fields */
@@ -161,14 +157,13 @@ private:
     std::unique_ptr<PageLockedHost> attitudeStaging;
 
     /* GPU data structures */
-    std::array<std::unique_ptr<CudaStream>, NUM_STREAMS> streams;
-    std::array<GpuArrayPtr<float2>, NUM_STREAMS> rawDataGpu;
-    std::array<GpuArrayPtr<float2>, NUM_STREAMS> referenceGpu;
-    std::array<GpuArrayPtr<float>, NUM_STREAMS> windowGpu;
-    std::array<GpuArrayPtr<uint8_t>, NUM_STREAMS> sumScratchGpu;
-    std::array<GpuArrayPtr<float3>, NUM_STREAMS> positionGpu;
-    std::array<GpuArrayPtr<float3>, NUM_STREAMS> velocityGpu;
-    std::array<GpuArrayPtr<float4>, NUM_STREAMS> attitudeGpu;
+    GpuArrayPtr<float2> rawDataGpu;
+    GpuArrayPtr<float2> referenceGpu;
+    GpuArrayPtr<float> windowGpu;
+    GpuArrayPtr<uint8_t> sumScratchGpu;
+    GpuArrayPtr<float3> positionGpu;
+    GpuArrayPtr<float3> velocityGpu;
+    GpuArrayPtr<float4> attitudeGpu;
     GpuArrayPtr<float> priTimesGpu;
     GpuArrayPtr<float> sampleTimesGpu;
     GpuArrayPtr<float> rangeWindowGpu;

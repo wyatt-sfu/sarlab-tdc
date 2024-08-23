@@ -37,8 +37,7 @@ void createWindow(
     // Data shape arguments
     int chunkIdx, // Current chunk index
     int nPri, // Number of PRIs in the full acquisition
-    int nSamples, // Number of samples per PRI
-    cudaStream_t stream // Stream to run the kernel in
+    int nSamples // Number of samples per PRI
 );
 
 /**
@@ -59,8 +58,7 @@ void referenceResponse(
     // Data shape arguments
     int chunkIdx, // Current chunk index
     int nPri, // Number of PRIs in the full acquisition
-    int nSamples, // Number of samples per PRI
-    cudaStream_t stream // Stream to run the kernel in
+    int nSamples // Number of samples per PRI
 );
 
 /**
@@ -80,9 +78,7 @@ void correlateAndSum(
     // Data shape arguments
     int chunkIdx, // Current chunk index
     int nPri, // Number of PRIs in the full acquisition
-    int nSamples, // Number of samples per PRI
-    int streamIdx, // Stream index
-    cudaStream_t stream // Stream to run the kernel in
+    int nSamples // Number of samples per PRI
 );
 
 /**
