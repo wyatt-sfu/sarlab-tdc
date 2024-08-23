@@ -24,8 +24,8 @@ public:
     {
         cudaError_t err = cudaStreamCreate(&stream);
         if (err != cudaSuccess) {
-            throw std::runtime_error(fmt::format("Failed to create stream: {}",
-                                                 cudaGetErrorString(err)));
+            throw std::runtime_error(
+                fmt::format("Failed to create stream: {}", cudaGetErrorString(err)));
         }
     }
 

@@ -30,9 +30,8 @@ public:
         void *gpuMem = nullptr;
         cudaError_t err = cudaMalloc(&gpuMem, arraySize * sizeof(T));
         if (err != cudaSuccess) {
-            throw std::runtime_error(
-                fmt::format("Failed to allocate array on the GPU: {}",
-                            cudaGetErrorString(err)));
+            throw std::runtime_error(fmt::format(
+                "Failed to allocate array on the GPU: {}", cudaGetErrorString(err)));
         }
 
         array = reinterpret_cast<T *>(gpuMem);
@@ -79,12 +78,11 @@ public:
      */
     void hostToDevice(T const *hostArray)
     {
-        cudaError_t err = cudaMemcpy(array, hostArray, arraySize * sizeof(T),
-                                     cudaMemcpyHostToDevice);
+        cudaError_t err =
+            cudaMemcpy(array, hostArray, arraySize * sizeof(T), cudaMemcpyHostToDevice);
         if (err != cudaSuccess) {
-            throw std::runtime_error(
-                fmt::format("Failed to copy memory to device: {}",
-                            cudaGetErrorString(err)));
+            throw std::runtime_error(fmt::format("Failed to copy memory to device: {}",
+                                                 cudaGetErrorString(err)));
         }
     }
 
@@ -96,13 +94,11 @@ public:
      */
     void hostToDeviceAsync(T const *hostArray, cudaStream_t stream)
     {
-        cudaError_t err =
-            cudaMemcpyAsync(array, hostArray, arraySize * sizeof(T),
-                            cudaMemcpyHostToDevice, stream);
+        cudaError_t err = cudaMemcpyAsync(array, hostArray, arraySize * sizeof(T),
+                                          cudaMemcpyHostToDevice, stream);
         if (err != cudaSuccess) {
-            throw std::runtime_error(
-                fmt::format("Failed to async copy memory to device: {}",
-                            cudaGetErrorString(err)));
+            throw std::runtime_error(fmt::format(
+                "Failed to async copy memory to device: {}", cudaGetErrorString(err)));
         }
     }
 
@@ -113,11 +109,11 @@ public:
      */
     void deviceToHost(T *hostArray) const
     {
-        cudaError_t err = cudaMemcpy(hostArray, array, arraySize * sizeof(T),
-                                     cudaMemcpyDeviceToHost);
+        cudaError_t err =
+            cudaMemcpy(hostArray, array, arraySize * sizeof(T), cudaMemcpyDeviceToHost);
         if (err != cudaSuccess) {
-            throw std::runtime_error(fmt::format(
-                "Failed to copy memory to host: {}", cudaGetErrorString(err)));
+            throw std::runtime_error(fmt::format("Failed to copy memory to host: {}",
+                                                 cudaGetErrorString(err)));
         }
     }
 
@@ -130,12 +126,11 @@ public:
      */
     void deviceToHostAsync(T *hostArray, cudaStream_t stream) const
     {
-        cudaError_t err =
-            cudaMemcpyAsync(hostArray, array, arraySize * sizeof(T),
-                            cudaMemcpyDeviceToHost, stream);
+        cudaError_t err = cudaMemcpyAsync(hostArray, array, arraySize * sizeof(T),
+                                          cudaMemcpyDeviceToHost, stream);
         if (err != cudaSuccess) {
-            throw std::runtime_error(fmt::format(
-                "Failed to copy memory to host: {}", cudaGetErrorString(err)));
+            throw std::runtime_error(fmt::format("Failed to copy memory to host: {}",
+                                                 cudaGetErrorString(err)));
         }
     }
 

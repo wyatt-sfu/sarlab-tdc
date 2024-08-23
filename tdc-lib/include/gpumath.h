@@ -9,8 +9,7 @@
 /**
  * Sum operator for float2 arrays (which we use to represent complex numbers)
  */
-__host__ __device__ inline float2 operator+(const float2 &lhs,
-                                            const float2 &rhs)
+__host__ __device__ inline float2 operator+(const float2 &lhs, const float2 &rhs)
 {
     return {lhs.x + rhs.x, lhs.y + rhs.y};
 }
