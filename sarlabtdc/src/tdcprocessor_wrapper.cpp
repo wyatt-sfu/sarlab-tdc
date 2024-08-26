@@ -16,9 +16,9 @@ TdcProcessorWrapper::TdcProcessorWrapper(int gpuNum)
     setupLogging();
 }
 
-void TdcProcessorWrapper::start()
+void TdcProcessorWrapper::start(bool applyRangeWindow)
 {
-    tdcProc->start();
+    tdcProc->start(applyRangeWindow);
 }
 
 void TdcProcessorWrapper::setRawData(

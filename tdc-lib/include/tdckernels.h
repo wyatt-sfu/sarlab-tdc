@@ -14,9 +14,10 @@
  */
 
 /**
- * Initialize the range window array with a Hamming window.
+ * Initialize the range window array with a Hamming window if applyRangeWindow is true.
+ * Else this initializes the range window to all ones.
  */
-void initRangeWindow(float *rgWin, int nSamples);
+void initRangeWindow(float *rgWin, int nSamples, bool applyRangeWindow);
 
 /**
  * Create the window array for the specified chunk of raw data.

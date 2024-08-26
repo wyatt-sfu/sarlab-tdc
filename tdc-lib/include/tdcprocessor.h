@@ -52,8 +52,14 @@ public:
      * Start the SAR processor. Returns when the processing is complete.
      *
      * This function should only be called after setRawData and setFocusGrid.
+     * 
+     * Arguments:
+     * -------------
+     * applyRangeWindow: If true, the raw data is range windowed. Set to False if you
+     *                   have already range windowed the raw data.
+     * 
      */
-    void start();
+    void start(bool applyRangeWindow);
 
     /**
      * Configures the raw radar data input to the processor. This needs to be
@@ -149,6 +155,9 @@ private:
     int gridNumRows = 0;
     int gridNumCols = 0;
     std::unique_ptr<float2[]> focusedImage;
+
+    /* Processor options */
+    bool applyRangeWindow = true;
 
     /* Staging buffers for transferring data to the GPU */
     std::unique_ptr<PageLockedHost> rawStaging;

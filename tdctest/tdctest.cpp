@@ -39,5 +39,7 @@ TEST(TdcProcessorTest, BasicTest)
     std::vector<spdlog::sink_ptr> sinkList = {consoleSink};
     tdc.setLoggerSinks(sinkList);
 
-    tdc.start();
+    bool applyRangeWin = true;
+
+    tdc.start(applyRangeWin);
 }

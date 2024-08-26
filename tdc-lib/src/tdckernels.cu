@@ -26,33 +26,38 @@ __device__ float2 SumResults;
 
 /**
  * Cuda kernel for initializing the range window array.
- *
- * rgWin: 1D array that will be filled with the range window weights
- * nSamples: Number of samples
  */
-__global__ void initRangeWindowKernel(float *__restrict__ rgWin, int nSamples)
+__global__ void initRangeWindowKernel(float *__restrict__ rgWin, // 1D range window
+                                      int nSamples, // Number of samples
+                                      bool applyRangeWindow // Flag to control behaviour
+)
 {
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     if (sampleIdx >= nSamples) {
         return;
     }
 
-    rgWin[sampleIdx] = RANGE_WINDOW_A_PARAMETER
-                       - ((1.0 - RANGE_WINDOW_A_PARAMETER)
-                          * cosf(2.0F * CUDART_PI_F * sampleIdx / nSamples));
+    if (applyRangeWindow) {
+        rgWin[sampleIdx] =
+            RANGE_WINDOW_A_PARAMETER
+            - ((1.0 - RANGE_WINDOW_A_PARAMETER) * cospif(2.0F * sampleIdx / nSamples));
+    } else {
+        rgWin[sampleIdx] = 1.0F;
+    }
 }
 
 /**
- * Initialize the range window array on the GPU
- *
- * rgWin: 1D array that will be filled with the range window weights
- * nSamples: Number of samples
+ * Initialize the range window array with a Hamming window if applyRangeWindow is true.
+ * Else this initializes the range window to all ones.
  */
-void initRangeWindow(float *__restrict__ rgWin, int nSamples)
+void initRangeWindow(float *rgWin, // 1D range window
+                     int nSamples, // Number of samples
+                     bool applyRangeWindow // Flag to control behaviour
+)
 {
     dim3 const blockSize(32, 1, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x, 1, 1);
-    initRangeWindowKernel<<<gridSize, blockSize>>>(rgWin, nSamples);
+    initRangeWindowKernel<<<gridSize, blockSize>>>(rgWin, nSamples, applyRangeWindow);
 }
 
 __global__ void dopplerCentroid(float4 const *velocity, float4 const *attitude,

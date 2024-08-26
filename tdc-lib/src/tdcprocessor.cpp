@@ -48,10 +48,11 @@ TdcProcessor::~TdcProcessor()
     cudaDeviceReset();
 }
 
-void TdcProcessor::start()
+void TdcProcessor::start(bool applyRangeWindow)
 {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     log->info("Starting the TDC processor");
+    this->applyRangeWindow = applyRangeWindow;
     allocateGpuMemory();
     allocateHostMemory();
     initGpuData();
@@ -59,9 +60,6 @@ void TdcProcessor::start()
     // The data is chunked so that large data collections can still be processed
     // without running out of RAM on the GPU. Useful for laptops.
     nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
-
-    // Initialize the range window
-    initRangeWindow(rangeWindowGpu->ptr(), nSamples);
     cudaDeviceSynchronize();
 
     // Start looping through each chunk of data
@@ -258,7 +256,7 @@ void TdcProcessor::initGpuData()
     log->info("... Done initializing focused image");
 
     log->info("Initializing range window ...");
-    initRangeWindow(rangeWindowGpu->ptr(), nSamples);
+    initRangeWindow(rangeWindowGpu->ptr(), nSamples, applyRangeWindow);
     log->info("... Done initializing range window");
 }
 
