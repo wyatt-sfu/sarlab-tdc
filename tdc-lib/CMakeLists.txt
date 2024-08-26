@@ -30,6 +30,7 @@ set_target_properties(tdc-lib PROPERTIES
     CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
 target_link_libraries(tdc-lib PUBLIC
+    cudatypes
     fmt::fmt
     spdlog::spdlog
     CUDA::cudart_static

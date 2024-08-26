@@ -14,3 +14,4 @@ enable_testing()
 # ##############################################################################
 add_subdirectory(tdc-lib)
 add_subdirectory(tdctest)
+add_subdirectory(cudatypes)

@@ -15,6 +15,10 @@ set(TDCLIB_DIR ${CMAKE_SOURCE_DIR}/../tdc-lib)
 message("TDCLIB_DIR: ${TDCLIB_DIR}")
 add_subdirectory(${TDCLIB_DIR} ${CMAKE_SOURCE_DIR}/build/tdc-lib)
 
+set(CUDATYPES_DIR ${CMAKE_SOURCE_DIR}/../cudatypes)
+message("CUDATYPES_DIR: ${CUDATYPES_DIR}")
+add_subdirectory(${CUDATYPES_DIR} ${CMAKE_SOURCE_DIR}/build/cudatypes)
+
 # Create the pybind module
 pybind11_add_module(_sarlabtdc
     src/interface.cpp
@@ -27,4 +31,5 @@ target_include_directories(_sarlabtdc PUBLIC
 
 target_link_libraries(_sarlabtdc PRIVATE
     tdc-lib
+    cudatypes
 )

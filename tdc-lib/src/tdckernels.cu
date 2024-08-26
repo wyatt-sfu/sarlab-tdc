@@ -122,9 +122,9 @@ void createWindow(
     dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
-    createWindowKernel<<<gridSize, blockSize>>>(
-        window, rangeWindow, velocity, attitude, lambda, dopplerBw, chunkIdx, nPri,
-        nSamples);
+    createWindowKernel<<<gridSize, blockSize>>>(window, rangeWindow, velocity, attitude,
+                                                lambda, dopplerBw, chunkIdx, nPri,
+                                                nSamples);
 }
 
 /**
@@ -258,8 +258,8 @@ void correlateAndSum(
     dim3 const blockSize(CorrelateKernel::BlockSizeX, CorrelateKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
-    correlateWithReference<<<gridSize, blockSize>>>(raw, reference, chunkIdx,
-                                                               nPri, nSamples);
+    correlateWithReference<<<gridSize, blockSize>>>(raw, reference, chunkIdx, nPri,
+                                                    nSamples);
 
     // Then sum the result
     void *devPtr;
