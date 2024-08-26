@@ -1,5 +1,5 @@
 # sarlab-tdc
-Open source time-domain correlation SAR processor for high bandwidth mmWave radars
+Open source time-domain correlation SAR processor for high bandwidth FMCW mmWave radars
 
 ## Computer Requirements
 This library uses CUDA, which requires a compatible Nvidia GPU.
@@ -10,6 +10,6 @@ by using the VCPKG_ROOT environment variable (check that this variable exists on
 your machine).
 
 ## Python Library Setup
-1) Install pybind in your Python environment (i.e. conda install pybind11).
-2) cd sarlabtdc
+1) Install pybind in your Python environment (i.e. pip install pybind11).
+2) cd <GIT CLONE LOCATION>/sarlabtdc
 3) pip install .
