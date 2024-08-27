@@ -23,6 +23,7 @@
 
 /* Project headers */
 #include "gpuarray.h"
+#include "pagelockedhost.h"
 #include "tdckernels.h"
 #include "tuning.h"
 
