@@ -60,8 +60,9 @@ void initRangeWindow(float *rgWin, // 1D range window
     initRangeWindowKernel<<<gridSize, blockSize>>>(rgWin, nSamples, applyRangeWindow);
 }
 
-__global__ void dopplerCentroid(float4 const *velocity, float4 const *attitude,
-                                float lambda, int chunkIdx, int nPri, int nSamp)
+__global__ void dopplerCentroidKernel(float4 const *velocity, float4 const *attitude,
+                                      float lambda, int chunkIdx, int nPri,
+                                      int nSamples)
 {
     float lambdaFac = 2.0f / lambda;
 }
@@ -78,6 +79,7 @@ __global__ void createWindowKernel(
     // Positioning data
     float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
+    float3 target, // [m] Location on the focus grid
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
@@ -92,12 +94,29 @@ __global__ void createWindowKernel(
     unsigned int const priChunkIdx = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int const sampleIdx = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int const priGlobalIdx = chunkIdx * PRI_CHUNKSIZE + priChunkIdx;
+    const ptrdiff_t elementIdx =
+        static_cast<ptrdiff_t>(priChunkIdx) * nSamples + sampleIdx;
 
     if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamples) {
-        float lambdaFac = 2.0f / lambda;
-        // Compute the Doppler centroid for this pulse
+        // First we need to compute the Doppler centroid for this pulse
+        float3 vel = velocity[elementIdx];
+        float4 q = attitude[elementIdx];
 
-        // TODO: Compute window based on Doppler
+        // Compute the pointing angle of the radar in local coordinates
+        // Start with the boresight vector in body coordinates
+        float3 antPointing = {0.0, 1.0, 0.0};
+
+        // Now we rotate this to get the pointing vector in the local scene coordinates
+        antPointing = q_rot(q, antPointing); // This is already a unit vector
+
+        // For testing purposes you can uncomment this
+        // float _norm = norm3df(antPointing.x, antPointing.y, antPointing.z);
+        // if (fabs(_norm - 1.0F) > 0.001) {
+        //     printf("Pointing vector is not normalized!\n");
+        // }
+
+        float fDop = 2.0f / lambda;
+
         window[priChunkIdx * nSamples + sampleIdx] = rangeWindow[sampleIdx];
     }
 }
@@ -113,6 +132,7 @@ void createWindow(
     // Positioning data
     float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
+    float3 target, // [m] Location on the focus grid
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
@@ -128,8 +148,8 @@ void createWindow(
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
     createWindowKernel<<<gridSize, blockSize>>>(window, rangeWindow, velocity, attitude,
-                                                lambda, dopplerBw, chunkIdx, nPri,
-                                                nSamples);
+                                                target, lambda, dopplerBw, chunkIdx,
+                                                nPri, nSamples);
 }
 
 /**

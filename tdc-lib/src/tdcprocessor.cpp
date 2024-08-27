@@ -70,21 +70,21 @@ void TdcProcessor::start(bool applyRangeWindow)
 
         for (int j = 0; j < gridNumRows; ++j) {
             for (int k = 0; k < gridNumCols; ++k) {
+                float3 target = focusGrid[(j * gridNumCols) + k];
+
                 // Create the window array
                 createWindow(
                     // Window arrays
                     windowGpu->ptr(), rangeWindowGpu->ptr(), //
 
                     // Position related arguments
-                    velocityGpu->ptr(), attitudeGpu->ptr(), //
+                    velocityGpu->ptr(), attitudeGpu->ptr(), target, //
 
                     // Radar parameters
                     1.0F, 1.0F,
 
                     // Data shape arguments
                     i, nPri, nSamples);
-
-                float3 target = focusGrid[(j * gridNumCols) + k];
 
                 // Create the reference response for this grid location
                 referenceResponse(
