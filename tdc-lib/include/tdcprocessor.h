@@ -52,14 +52,15 @@ public:
      * Start the SAR processor. Returns when the processing is complete.
      *
      * This function should only be called after setRawData and setFocusGrid.
-     * 
+     *
      * Arguments:
      * -------------
+     * dopplerBandwidth: [Hz] Controls the width of the azimuth window.
      * applyRangeWindow: If true, the raw data is range windowed. Set to False if you
      *                   have already range windowed the raw data.
-     * 
+     *
      */
-    void start(bool applyRangeWindow);
+    void start(float dopplerBandwidth, bool applyRangeWindow);
 
     /**
      * Configures the raw radar data input to the processor. This needs to be

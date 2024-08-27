@@ -16,9 +16,9 @@ TdcProcessorWrapper::TdcProcessorWrapper(int gpuNum)
     setupLogging();
 }
 
-void TdcProcessorWrapper::start(bool applyRangeWindow)
+void TdcProcessorWrapper::start(float dopplerBandwidth, bool applyRangeWindow)
 {
-    tdcProc->start(applyRangeWindow);
+    tdcProc->start(dopplerBandwidth, applyRangeWindow);
 }
 
 void TdcProcessorWrapper::setRawData(
@@ -27,8 +27,7 @@ void TdcProcessorWrapper::setRawData(
     py::array_t<float, py::array::c_style> sampleTimes,
     py::array_t<float, py::array::c_style> position,
     py::array_t<float, py::array::c_style> velocity,
-    py::array_t<float, py::array::c_style> attitude, float modRate,
-    float startFreq)
+    py::array_t<float, py::array::c_style> attitude, float modRate, float startFreq)
 {
     // Assign to member variables to prevent Python garbage collection
     this->rawData = rawData;
@@ -108,12 +107,11 @@ void TdcProcessorWrapper::setRawData(
     auto *attPtr = reinterpret_cast<float const *>(attInfo.ptr);
 
     // Call the underlying C++ function
-    tdcProc->setRawData(dataPtr, priTimePtr, sampleTimePtr, posPtr, velPtr,
-                        attPtr, nPri, nSamples, modRate, startFreq);
+    tdcProc->setRawData(dataPtr, priTimePtr, sampleTimePtr, posPtr, velPtr, attPtr,
+                        nPri, nSamples, modRate, startFreq);
 }
 
-void TdcProcessorWrapper::setFocusGrid(
-    py::array_t<float, py::array::c_style> focusGrid)
+void TdcProcessorWrapper::setFocusGrid(py::array_t<float, py::array::c_style> focusGrid)
 {
     // Stops garbage collection
     this->focusGrid = focusGrid;

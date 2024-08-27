@@ -51,7 +51,7 @@ TdcProcessor::~TdcProcessor()
     cudaDeviceReset();
 }
 
-void TdcProcessor::start(bool applyRangeWindow)
+void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
 {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     log->info("Starting the TDC processor");
@@ -84,7 +84,7 @@ void TdcProcessor::start(bool applyRangeWindow)
                     velocityGpu->ptr(), attitudeGpu->ptr(), target, //
 
                     // Radar parameters
-                    wavelengthCenter, 1.0F,
+                    wavelengthCenter, dopplerBandwidth,
 
                     // Data shape arguments
                     i, nPri, nSamples);
