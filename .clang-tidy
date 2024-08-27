@@ -8,3 +8,7 @@ Checks: >
   portability-*,
   -bugprone-easily-swappable-parameters,
   -readability-identifier-length
+
+CheckOptions:
+  - key: readability-magic-numbers.IgnoredFloatingPointValues
+    value: "0.5;1.0;2.0;3.0;4.0;100.0;"
