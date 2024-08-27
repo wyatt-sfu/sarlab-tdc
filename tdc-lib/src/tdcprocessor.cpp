@@ -29,6 +29,8 @@
 /* Class header */
 #include "tdcprocessor.h"
 
+#define SPEED_OF_LIGHT 299792458.0
+
 TdcProcessor::TdcProcessor(int gpuNum)
 {
     // Initialize with logging to null
@@ -81,7 +83,7 @@ void TdcProcessor::start(bool applyRangeWindow)
                     velocityGpu->ptr(), attitudeGpu->ptr(), target, //
 
                     // Radar parameters
-                    1.0F, 1.0F,
+                    wavelengthCenter, 1.0F,
 
                     // Data shape arguments
                     i, nPri, nSamples);
@@ -167,6 +169,12 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData, float const *p
     if (nSamples <= 0) {
         throw std::invalid_argument("nSamples must be greater than 0");
     }
+
+    // Compute the wavelength of the center of the chirp
+    double chirpTime = sampleTimes[nSamples - 1] - sampleTimes[0];
+    double endFreq = startFreq + (static_cast<double>(modRate) * chirpTime);
+    double centerFreq = (startFreq + endFreq) / 2.0;
+    wavelengthCenter = static_cast<float>(SPEED_OF_LIGHT / centerFreq);
 }
 
 void TdcProcessor::setFocusGrid(float const *focusGrid, int nRows, int nCols)

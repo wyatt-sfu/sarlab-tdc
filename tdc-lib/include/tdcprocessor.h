@@ -144,6 +144,7 @@ private:
     int nChunks = 0;
     float modRate = 0.0;
     float startFreq = 0.0;
+    float wavelengthCenter = 0.0;
 
     /* Radar position fields */
     float const *position = nullptr;
