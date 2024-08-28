@@ -99,9 +99,12 @@ __global__ void createWindowKernel(
         static_cast<ptrdiff_t>(priChunkIdx) * nSamples + sampleIdx;
 
     if (priGlobalIdx < nPri && priChunkIdx < PRI_CHUNKSIZE && sampleIdx < nSamples) {
-        // First we need to compute the Doppler centroid for this pulse
+        // Read out the radar position/attitude data
+        float3 radarPos = position[elementIdx];
         float3 vel = velocity[elementIdx];
         float4 q = attitude[elementIdx];
+
+        // First step is to compute the Doppler centroid for this pulse/sample
 
         // Compute the pointing angle of the radar in local coordinates
         // Start with the boresight vector in body coordinates
@@ -110,17 +113,14 @@ __global__ void createWindowKernel(
         // Now we rotate this to get the pointing vector in the local scene coordinates
         antPointing = q_rot(q, antPointing); // This is already a unit vector
 
-        // For testing purposes you can uncomment this
-        // float _norm = norm3df(antPointing.x, antPointing.y, antPointing.z);
-        // if (fabs(_norm - 1.0F) > 0.001) {
-        //     printf("Pointing vector is not normalized!\n");
-        // }
-
         float fDopCentroid = 2.0F / lambda * v3_dot(vel, antPointing);
-        float3 radarPos = position[elementIdx];
+
+        // Now compute the doppler freq to the target being focused
         float3 radarToTarget = target - radarPos;
         float fDop = 2.0F / lambda * v3_dot(vel, radarToTarget)
                      / norm3df(radarToTarget.x, radarToTarget.y, radarToTarget.z);
+
+        // Window based on the difference to the doppler centroid
         float deltaFDop = fDop - fDopCentroid;
         float azWin = 0.0;
         if (fabs(fDop) <= dopplerBw / 2.0) {
@@ -129,7 +129,7 @@ __global__ void createWindowKernel(
                        * cosf((2.0F * CUDART_PI * deltaFDop / dopplerBw) - CUDART_PI));
         }
 
-        window[priChunkIdx * nSamples + sampleIdx] = rangeWindow[sampleIdx] * azWin;
+        window[elementIdx] = rangeWindow[sampleIdx] * azWin;
     }
 }
 
