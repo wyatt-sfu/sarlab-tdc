@@ -116,15 +116,17 @@ __global__ void createWindowKernel(
         //     printf("Pointing vector is not normalized!\n");
         // }
 
+        float fDopCentroid = 2.0F / lambda * v3_dot(vel, antPointing);
         float3 radarPos = position[elementIdx];
         float3 radarToTarget = target - radarPos;
-        float fDop = 2.0f / lambda * v3_dot(vel, radarToTarget)
+        float fDop = 2.0F / lambda * v3_dot(vel, radarToTarget)
                      / norm3df(radarToTarget.x, radarToTarget.y, radarToTarget.z);
-        float azWin = 1.0;
+        float deltaFDop = fDop - fDopCentroid;
+        float azWin = 0.0;
         if (fabs(fDop) <= dopplerBw / 2.0) {
             azWin = AZIMUTH_WINDOW_A_PARAMETER
                     - ((1.0F - AZIMUTH_WINDOW_A_PARAMETER)
-                       * cospif((2.0 * fDop / dopplerBw) - CUDART_PI));
+                       * cosf((2.0F * CUDART_PI * deltaFDop / dopplerBw) - CUDART_PI));
         }
 
         window[priChunkIdx * nSamples + sampleIdx] = rangeWindow[sampleIdx] * azWin;
