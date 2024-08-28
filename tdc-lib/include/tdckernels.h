@@ -28,6 +28,7 @@ void createWindow(
     float const *rangeWindow, // 1D range window
 
     // Position related arguments
+    float3 const *position, // [m] 2D, x,y,z position at each PRI/sample
     float3 const *velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *attitude, // 2D quaternion at each PRI/sample
     float3 target, // [m] Location on the focus grid

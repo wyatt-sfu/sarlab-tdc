@@ -7,7 +7,7 @@
 #include <vector_types.h>
 
 /**
- * Sum operator for float2 arrays (which we use to represent complex numbers)
+ * Sum operator for float2 values (which we use to represent complex numbers)
  */
 __host__ __device__ inline float2 operator+(const float2 &lhs, const float2 &rhs)
 {
@@ -15,11 +15,19 @@ __host__ __device__ inline float2 operator+(const float2 &lhs, const float2 &rhs
 }
 
 /**
+ * Difference operator for float3 values (which we use to represent positions)
+ */
+__host__ __device__ inline float3 operator-(const float3 &lhs, const float3 &rhs)
+{
+    return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z};
+}
+
+/**
  * Dot product of 3d vectors
  */
-__host__ __device__ inline float v3_dot(float3 const *v1, float3 const *v2)
+__host__ __device__ inline float v3_dot(float3 const &v1, float3 const &v2)
 {
-    return (v1->x * v2->x) + (v1->y * v2->y) + (v1->z * v2->z);
+    return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 }
 
 /**

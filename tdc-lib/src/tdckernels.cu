@@ -77,6 +77,7 @@ __global__ void createWindowKernel(
     float const *__restrict__ rangeWindow, // 1D range window
 
     // Positioning data
+    float3 const *position, // [m] 2D, x,y,z position at each PRI/sample
     float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
     float3 target, // [m] Location on the focus grid
@@ -115,9 +116,18 @@ __global__ void createWindowKernel(
         //     printf("Pointing vector is not normalized!\n");
         // }
 
-        float fDop = 2.0f / lambda;
+        float3 radarPos = position[elementIdx];
+        float3 radarToTarget = target - radarPos;
+        float fDop = 2.0f / lambda * v3_dot(vel, radarToTarget)
+                     / norm3df(radarToTarget.x, radarToTarget.y, radarToTarget.z);
+        float azWin = 1.0;
+        if (fabs(fDop) <= dopplerBw / 2.0) {
+            azWin = AZIMUTH_WINDOW_A_PARAMETER
+                    - ((1.0F - AZIMUTH_WINDOW_A_PARAMETER)
+                       * cospif((2.0 * fDop / dopplerBw) - CUDART_PI));
+        }
 
-        window[priChunkIdx * nSamples + sampleIdx] = rangeWindow[sampleIdx];
+        window[priChunkIdx * nSamples + sampleIdx] = rangeWindow[sampleIdx] * azWin;
     }
 }
 
@@ -130,6 +140,7 @@ void createWindow(
     float const *__restrict__ rangeWindow, // 1D range window
 
     // Positioning data
+    float3 const *position, // [m] 2D, x,y,z position at each PRI/sample
     float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
     float3 target, // [m] Location on the focus grid
@@ -147,9 +158,9 @@ void createWindow(
     dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
-    createWindowKernel<<<gridSize, blockSize>>>(window, rangeWindow, velocity, attitude,
-                                                target, lambda, dopplerBw, chunkIdx,
-                                                nPri, nSamples);
+    createWindowKernel<<<gridSize, blockSize>>>(window, rangeWindow, position, velocity,
+                                                attitude, target, lambda, dopplerBw,
+                                                chunkIdx, nPri, nSamples);
 }
 
 /**

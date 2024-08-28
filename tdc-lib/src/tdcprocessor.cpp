@@ -81,7 +81,7 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
                     windowGpu->ptr(), rangeWindowGpu->ptr(), //
 
                     // Position related arguments
-                    velocityGpu->ptr(), attitudeGpu->ptr(), target, //
+                    positionGpu->ptr(), velocityGpu->ptr(), attitudeGpu->ptr(), target,
 
                     // Radar parameters
                     wavelengthCenter, dopplerBandwidth,
