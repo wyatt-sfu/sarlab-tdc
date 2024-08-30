@@ -15,6 +15,7 @@
 /* Project headers */
 #include "gpumath.h"
 #include "tuning.h"
+#include "windowing.h"
 
 /* Class header */
 #include "tdckernels.h"
@@ -60,13 +61,6 @@ void initRangeWindow(float *rgWin, // 1D range window
     initRangeWindowKernel<<<gridSize, blockSize>>>(rgWin, nSamples, applyRangeWindow);
 }
 
-__global__ void dopplerCentroidKernel(float4 const *velocity, float4 const *attitude,
-                                      float lambda, int chunkIdx, int nPri,
-                                      int nSamples)
-{
-    float lambdaFac = 2.0f / lambda;
-}
-
 /**
  * Cuda kernel for computing the window function for the specified chunk of
  * raw data.
@@ -102,25 +96,25 @@ __global__ void createWindowKernel(
         // Read out the radar position/attitude data
         float3 radarPos = position[elementIdx];
         float3 vel = velocity[elementIdx];
-        float4 q = attitude[elementIdx];
-
-        // First step is to compute the Doppler centroid for this pulse/sample
+        float4 att = attitude[elementIdx];
 
         // Compute the pointing angle of the radar in local coordinates
         // Start with the boresight vector in body coordinates
-        float3 antPointing = {0.0, 1.0, 0.0};
+        float3 bodyBoresight = {0.0, 1.0, 0.0};
 
-        // Now we rotate this to get the pointing vector in the local scene coordinates
-        antPointing = q_rot(q, antPointing); // This is already a unit vector
+        // First we need to compute the pointing angle of the radar in local coordinates
+        // using the attitude quaternion. This quaternion rotates the boresight vector
+        // from body coordinates to the local coordinate system we are focusing the
+        // image in.
+        float3 antPointing = q_rot(att, bodyBoresight); // This is already a unit vector
 
-        float fDopCentroid = 2.0F / lambda * v3_dot(vel, antPointing);
+        // Then get the Doppler centroid
+        float fDopCentroid = dopplerCentroid(vel, antPointing, lambda);
 
-        // Now compute the doppler freq to the target being focused
-        float3 radarToTarget = target - radarPos;
-        float fDop = 2.0F / lambda * v3_dot(vel, radarToTarget)
-                     / norm3df(radarToTarget.x, radarToTarget.y, radarToTarget.z);
+        // Now compute the Doppler freq to the target being focused
+        float fDop = dopplerFreq(radarPos, vel, target, lambda);
 
-        // Window based on the difference to the doppler centroid
+        // Window based on the difference to the Doppler centroid
         float deltaFDop = fDop - fDopCentroid;
         float azWin = 0.0;
         if (fabs(fDop) <= dopplerBw / 2.0) {
