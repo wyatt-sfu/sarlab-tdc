@@ -1,10 +1,26 @@
 #ifndef GPUMATH_H
 #define GPUMATH_H
 
+/* Standard library headers */
+#include <cmath>
+
 /* Cuda headers */
 #include <cuda_runtime.h>
 #include <device_types.h>
 #include <vector_types.h>
+
+/**
+ * Norm of a float3 that can be called from host or device
+ */
+__host__ __device__ inline float hdNorm3df(const float &x, const float &y,
+                                           const float &z)
+{
+#ifdef __CUDA_ARCH__
+    return norm3df(x, y, z);
+#else
+    return std::hypot(x, y, z);
+#endif
+}
 
 /**
  * Sum operator for float2 values (which we use to represent complex numbers)
