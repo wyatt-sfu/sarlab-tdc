@@ -1,3 +1,6 @@
+#ifndef TUNING_H
+#define TUNING_H
+
 /**
  * This file is used to contain CUDA parameters that can be changed while
  * performance tuning the software.
@@ -51,3 +54,5 @@ namespace CorrelateKernel {
 constexpr unsigned int BlockSizeX = 16;
 constexpr unsigned int BlockSizeY = 16;
 }
+
+#endif // TUNING_H

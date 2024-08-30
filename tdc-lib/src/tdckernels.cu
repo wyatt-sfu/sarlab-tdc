@@ -115,13 +115,7 @@ __global__ void createWindowKernel(
         float fDop = dopplerFreq(radarPos, vel, target, lambda);
 
         // Window based on the difference to the Doppler centroid
-        float deltaFDop = fDop - fDopCentroid;
-        float azWin = 0.0;
-        if (fabs(fDop) <= dopplerBw / 2.0) {
-            azWin = AZIMUTH_WINDOW_A_PARAMETER
-                    - ((1.0F - AZIMUTH_WINDOW_A_PARAMETER)
-                       * cosf((2.0F * CUDART_PI * deltaFDop / dopplerBw) - CUDART_PI));
-        }
+        float azWin = dopplerWindow(fDop, fDopCentroid, dopplerBw);
 
         window[elementIdx] = rangeWindow[sampleIdx] * azWin;
     }

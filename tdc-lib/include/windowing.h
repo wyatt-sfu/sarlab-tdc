@@ -1,15 +1,24 @@
+#ifndef WINDOWING_H
+#define WINDOWING_H
+
+/* Standard library headers */
+#include <cmath>
+
 /* CUDA headers*/
+#include <math_constants.h>
 #include <vector_types.h>
 
 /* Project headers */
 #include "gpumath.h"
+#include "tuning.h"
 
 /**
  * Returns the Doppler centroid using the platform velocity vector and the
  * radar antenna pointing vector (both in the local coordinate system).
  */
-__host__ __device__ inline float dopplerCentroid(const float3 &vel, const float3 &antPointing,
-                                        float lambda)
+__host__ __device__ inline float dopplerCentroid(const float3 &vel,
+                                                 const float3 &antPointing,
+                                                 float lambda)
 {
     return 2.0F / lambda * v3_dot(vel, antPointing);
 }
@@ -26,3 +35,22 @@ __host__ __device__ inline float dopplerFreq(const float3 &pos, const float3 &ve
 
     return fDop;
 }
+
+/**
+ * Compute a window based on the difference between the Doppler frequency and
+ * the Doppler centroid.
+ */
+__host__ __device__ inline float dopplerWindow(float fDop, float fDopCentroid,
+                                               float dopplerBw)
+{
+    float deltaFDop = fDop - fDopCentroid;
+    float azWin = 0.0;
+    if (fabs(fDop) <= dopplerBw / 2.0) {
+        azWin = AZIMUTH_WINDOW_A_PARAMETER
+                - ((1.0F - AZIMUTH_WINDOW_A_PARAMETER)
+                   * cosf((2.0F * PI_F * deltaFDop / dopplerBw) - PI_F));
+    }
+    return azWin;
+}
+
+#endif // WINDOWING_H

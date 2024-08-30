@@ -9,6 +9,8 @@
 #include <device_types.h>
 #include <vector_types.h>
 
+#define PI_F 3.141592653589F
+
 /**
  * Norm of a float3 that can be called from host or device
  */
