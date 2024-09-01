@@ -2,7 +2,9 @@
 #define TDCPROCESSOR_H
 
 /* Standard library headers */
+#include <array>
 #include <complex>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -135,6 +137,7 @@ private:
     void initGpuData();
     void transferNextChunk(int chunkIdx);
     void stageNextChunk(int chunkIdx);
+    bool windowIsNonZero(const float3 &target, float dopplerBw, float3 bodyBoresight);
 
     /* Raw data fields */
     std::complex<float> const *rawData = nullptr;
@@ -182,6 +185,11 @@ private:
 
     /* Logging */
     std::shared_ptr<spdlog::logger> log;
+
+    /* Windowing speedup */
+    static constexpr size_t PointsPerRgLine = 3;
+    static constexpr size_t PointsPerChunk = 3;
+    std::array<float, PointsPerChunk * PointsPerRgLine> dopFreqMag;
 };
 
 #endif // TDCPROCESSOR_H

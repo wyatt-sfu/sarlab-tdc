@@ -4,6 +4,7 @@
 #include <complex>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
@@ -23,9 +24,11 @@
 
 /* Project headers */
 #include "gpuarray.h"
+#include "gpumath.h"
 #include "pagelockedhost.h"
 #include "tdckernels.h"
 #include "tuning.h"
+#include "windowing.h"
 
 /* Class header */
 #include "tdcprocessor.h"
@@ -60,6 +63,8 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
     allocateHostMemory();
     initGpuData();
 
+    float3 bodyBoresight = {0.0, 1.0, 0.0};
+
     // The data is chunked so that large data collections can still be processed
     // without running out of RAM on the GPU. Useful for laptops.
     nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
@@ -75,51 +80,54 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
             for (int k = 0; k < gridNumCols; ++k) {
                 float3 target = focusGrid[(j * gridNumCols) + k];
 
-                // Create the window array
-                createWindow(
-                    // Window arrays
-                    windowGpu->ptr(), rangeWindowGpu->ptr(), //
+                if (windowIsNonZero(target, dopplerBandwidth, bodyBoresight)) {
+                    // Create the window array
+                    createWindow(
+                        // Window arrays
+                        windowGpu->ptr(), rangeWindowGpu->ptr(), //
 
-                    // Position related arguments
-                    positionGpu->ptr(), velocityGpu->ptr(), attitudeGpu->ptr(), target,
+                        // Position related arguments
+                        positionGpu->ptr(), velocityGpu->ptr(), attitudeGpu->ptr(),
+                        target,
 
-                    // Radar parameters
-                    wavelengthCenter, dopplerBandwidth,
+                        // Radar parameters
+                        wavelengthCenter, dopplerBandwidth,
 
-                    // Data shape arguments
-                    i, nPri, nSamples);
+                        // Data shape arguments
+                        i, nPri, nSamples);
 
-                // Create the reference response for this grid location
-                referenceResponse(
-                    // Data array parameters
-                    referenceGpu->ptr(), //
-                    windowGpu->ptr(), //
-                    positionGpu->ptr(), //
-                    sampleTimesGpu->ptr(), //
-                    target, //
+                    // Create the reference response for this grid location
+                    referenceResponse(
+                        // Data array parameters
+                        referenceGpu->ptr(), //
+                        windowGpu->ptr(), //
+                        positionGpu->ptr(), //
+                        sampleTimesGpu->ptr(), //
+                        target, //
 
-                    // Radar operating parameters
-                    startFreq, modRate,
+                        // Radar operating parameters
+                        startFreq, modRate,
 
-                    // Data shape arguments
-                    i, nPri, nSamples);
+                        // Data shape arguments
+                        i, nPri, nSamples);
 
-                // Correlate the raw and reference arrays and then add the
-                // result to the focused image
-                float2 *pixelPtr =
-                    imageGpu->ptr() + (static_cast<ptrdiff_t>(j) * gridNumCols) + k;
-                correlateAndSum(
-                    // Data array parameters
-                    rawDataGpu->ptr(), //
-                    referenceGpu->ptr(), //
-                    sumScratchGpu->ptr(), //
-                    sumScratchGpu->size(), //
+                    // Correlate the raw and reference arrays and then add the
+                    // result to the focused image
+                    float2 *pixelPtr =
+                        imageGpu->ptr() + (static_cast<ptrdiff_t>(j) * gridNumCols) + k;
+                    correlateAndSum(
+                        // Data array parameters
+                        rawDataGpu->ptr(), //
+                        referenceGpu->ptr(), //
+                        sumScratchGpu->ptr(), //
+                        sumScratchGpu->size(), //
 
-                    // Focus image pixel
-                    pixelPtr,
+                        // Focus image pixel
+                        pixelPtr,
 
-                    // Data shape
-                    i, nPri, nSamples);
+                        // Data shape
+                        i, nPri, nSamples);
+                }
             }
         }
 
@@ -304,4 +312,36 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
                 stagingSizeVel);
     std::memcpy(attitudeStaging->ptr(), attPtr + (priIndex * nSamples * sizeof(float4)),
                 stagingSizeAtt);
+}
+
+bool TdcProcessor::windowIsNonZero(const float3 &target, float dopplerBw,
+                                   float3 bodyBoresight)
+{
+    // Compute the Doppler frequency for 9 points in this chunk
+    float3 const *posArray = reinterpret_cast<float3 const *>(positionStaging->ptr());
+    float3 const *velArray = reinterpret_cast<float3 const *>(velocityStaging->ptr());
+    float4 const *attArray = reinterpret_cast<float4 const *>(attitudeStaging->ptr());
+
+    size_t priStep = PRI_CHUNKSIZE / (PointsPerChunk - 1);
+    size_t sampleStep = nSamples / (PointsPerRgLine - 1);
+
+    for (int i = 0; i < PointsPerChunk; ++i) {
+        for (int j = 0; j < PointsPerRgLine; ++j) {
+            // Read out the values we want from the staging buffers
+            size_t priIdx = std::max((i * priStep) - 1, 0ULL);
+            size_t sampleIdx = std::max((j * sampleStep) - 1, 0ULL);
+            float3 pos = posArray[(priIdx * nSamples) + sampleIdx];
+            float3 vel = velArray[(priIdx * nSamples) + sampleIdx];
+            float4 att = attArray[(priIdx * nSamples) + sampleIdx];
+
+            float3 antPointing = q_rot(att, bodyBoresight);
+
+            dopFreqMag[(i * PointsPerRgLine) + j] =
+                std::abs(dopplerFreq(pos, vel, target, wavelengthCenter)
+                         - dopplerCentroid(vel, antPointing, wavelengthCenter));
+        }
+    }
+
+    float maxDop = *std::max_element(dopFreqMag.begin(), dopFreqMag.end());
+    return maxDop <= dopplerBw / 2.0;
 }
