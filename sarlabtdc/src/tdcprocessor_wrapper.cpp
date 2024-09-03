@@ -27,7 +27,8 @@ void TdcProcessorWrapper::setRawData(
     py::array_t<float, py::array::c_style> sampleTimes,
     py::array_t<float, py::array::c_style> position,
     py::array_t<float, py::array::c_style> velocity,
-    py::array_t<float, py::array::c_style> attitude, float modRate, float startFreq)
+    py::array_t<float, py::array::c_style> attitude, float modRate, float startFreq,
+    py::array_t<float, py::array::c_style> bodyBoresight)
 {
     // Assign to member variables to prevent Python garbage collection
     this->rawData = rawData;
@@ -36,6 +37,7 @@ void TdcProcessorWrapper::setRawData(
     this->position = position;
     this->velocity = velocity;
     this->attitude = attitude;
+    this->bodyBoresight = bodyBoresight;
 
     // Get array info structures
     auto dataInfo = rawData.request();
@@ -44,6 +46,7 @@ void TdcProcessorWrapper::setRawData(
     auto posInfo = position.request();
     auto velInfo = velocity.request();
     auto attInfo = attitude.request();
+    auto boresightInfo = bodyBoresight.request();
 
     // Check array dimensions
     if (dataInfo.ndim != 2) {
@@ -68,6 +71,10 @@ void TdcProcessorWrapper::setRawData(
 
     if (attInfo.ndim != 3) {
         throw std::runtime_error("attitude must be 3D");
+    }
+
+    if (boresightInfo.ndim != 1) {
+        throw std::runtime_error("bodyBoresight must be 1D");
     }
 
     // Get number of PRIs and number of samples from the data shape
@@ -98,6 +105,10 @@ void TdcProcessorWrapper::setRawData(
         throw std::runtime_error("attitude shape is incorrect");
     }
 
+    if (boresightInfo.shape[0] != 3) {
+        throw std::runtime_error("bodyBoresight shape is incorrect");
+    }
+
     // Get the pointers to the underlying data in the arrays
     auto *dataPtr = reinterpret_cast<std::complex<float> const *>(dataInfo.ptr);
     auto *priTimePtr = reinterpret_cast<float const *>(priTimeInfo.ptr);
@@ -105,10 +116,11 @@ void TdcProcessorWrapper::setRawData(
     auto *posPtr = reinterpret_cast<float const *>(posInfo.ptr);
     auto *velPtr = reinterpret_cast<float const *>(velInfo.ptr);
     auto *attPtr = reinterpret_cast<float const *>(attInfo.ptr);
+    auto *boresightPtr = reinterpret_cast<float3 const *>(boresightInfo.ptr);
 
     // Call the underlying C++ function
     tdcProc->setRawData(dataPtr, priTimePtr, sampleTimePtr, posPtr, velPtr, attPtr,
-                        nPri, nSamples, modRate, startFreq);
+                        nPri, nSamples, modRate, startFreq, *boresightPtr);
 }
 
 void TdcProcessorWrapper::setFocusGrid(py::array_t<float, py::array::c_style> focusGrid)

@@ -30,8 +30,10 @@ TEST(TdcProcessorTest, BasicTest)
     std::vector<float> position(rawNumElem * 3);
     std::vector<float> velocity(rawNumElem * 3);
     std::vector<float> attitude(rawNumElem * 4);
+    float3 bodyBoresight = {0, 1, 0};
     tdc.setRawData(raw.data(), priTimes.data(), sampleTimes.data(), position.data(),
-                   velocity.data(), attitude.data(), nPri, nSamples, 1.0, 1.0);
+                   velocity.data(), attitude.data(), nPri, nSamples, 1.0, 1.0,
+                   bodyBoresight);
 
     // Setup logging
     auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();

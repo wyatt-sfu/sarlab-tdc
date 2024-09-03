@@ -23,14 +23,14 @@ class TdcProcessorWrapper
 public:
     TdcProcessorWrapper(int gpuNum);
     void start(float dopplerBandwidth, bool applyRangeWindow);
-    void setRawData(
-        py::array_t<std::complex<float>, py::array::c_style> rawData,
-        py::array_t<float, py::array::c_style> priTimes,
-        py::array_t<float, py::array::c_style> sampleTimes,
-        py::array_t<float, py::array::c_style> position,
-        py::array_t<float, py::array::c_style> velocity,
-        py::array_t<float, py::array::c_style> attitude, float modRate,
-        float startFreq);
+    void setRawData(py::array_t<std::complex<float>, py::array::c_style> rawData,
+                    py::array_t<float, py::array::c_style> priTimes,
+                    py::array_t<float, py::array::c_style> sampleTimes,
+                    py::array_t<float, py::array::c_style> position,
+                    py::array_t<float, py::array::c_style> velocity,
+                    py::array_t<float, py::array::c_style> attitude, float modRate,
+                    float startFreq,
+                    py::array_t<float, py::array::c_style> bodyBoresight);
     void setFocusGrid(py::array_t<float, py::array::c_style> focusGrid);
     py::array_t<std::complex<float>, py::array::c_style> getFocusedImage();
 
@@ -49,6 +49,7 @@ private:
     py::array_t<float, py::array::c_style> velocity;
     py::array_t<float, py::array::c_style> attitude;
     py::array_t<float, py::array::c_style> focusGrid;
+    py::array_t<float, py::array::c_style> bodyBoresight;
 
     /* Focus grid shape */
     int gridNumRows;

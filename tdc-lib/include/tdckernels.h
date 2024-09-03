@@ -32,6 +32,7 @@ void createWindow(
     float3 const *velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *attitude, // 2D quaternion at each PRI/sample
     float3 target, // [m] Location on the focus grid
+    float3 bodyBoresight, // (x, y, z) Boresight vector in body coordinate system
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength

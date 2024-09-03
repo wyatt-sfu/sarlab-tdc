@@ -75,6 +75,7 @@ __global__ void createWindowKernel(
     float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
     float3 target, // [m] Location on the focus grid
+    float3 bodyBoresight, // (x, y, z) Boresight vector in body coordinate system
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
@@ -97,10 +98,6 @@ __global__ void createWindowKernel(
         float3 radarPos = position[elementIdx];
         float3 vel = velocity[elementIdx];
         float4 att = attitude[elementIdx];
-
-        // Compute the pointing angle of the radar in local coordinates
-        // Start with the boresight vector in body coordinates
-        float3 bodyBoresight = {0.0, 1.0, 0.0};
 
         // First we need to compute the pointing angle of the radar in local coordinates
         // using the attitude quaternion. This quaternion rotates the boresight vector
@@ -134,6 +131,7 @@ void createWindow(
     float3 const *__restrict__ velocity, // [m] 2D, x,y,z velocity at each PRI/sample
     float4 const *__restrict__ attitude, // 2D quaternion at each PRI/sample
     float3 target, // [m] Location on the focus grid
+    float3 bodyBoresight, // (x, y, z) Boresight vector in body coordinate system
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
@@ -149,8 +147,8 @@ void createWindow(
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
     createWindowKernel<<<gridSize, blockSize>>>(window, rangeWindow, position, velocity,
-                                                attitude, target, lambda, dopplerBw,
-                                                chunkIdx, nPri, nSamples);
+                                                attitude, target, bodyBoresight, lambda,
+                                                dopplerBw, chunkIdx, nPri, nSamples);
 }
 
 /**

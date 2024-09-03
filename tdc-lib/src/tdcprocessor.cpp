@@ -63,8 +63,6 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
     allocateHostMemory();
     initGpuData();
 
-    float3 bodyBoresight = {0.0, 1.0, 0.0};
-
     // The data is chunked so that large data collections can still be processed
     // without running out of RAM on the GPU. Useful for laptops.
     nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
@@ -88,7 +86,7 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
 
                         // Position related arguments
                         positionGpu->ptr(), velocityGpu->ptr(), attitudeGpu->ptr(),
-                        target,
+                        target, this->bodyBoresight,
 
                         // Radar parameters
                         wavelengthCenter, dopplerBandwidth,
@@ -156,7 +154,8 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
 void TdcProcessor::setRawData(std::complex<float> const *rawData, float const *priTimes,
                               float const *sampleTimes, float const *position,
                               float const *velocity, float const *attitude, int nPri,
-                              int nSamples, float modRate, float startFreq)
+                              int nSamples, float modRate, float startFreq,
+                              float3 bodyBoresight)
 {
     log->info("Setting raw data with {} PRIs and {} samples/PRI", nPri, nSamples);
     this->rawData = rawData;
@@ -169,6 +168,7 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData, float const *p
     this->nSamples = nSamples;
     this->modRate = modRate;
     this->startFreq = startFreq;
+    this->bodyBoresight = bodyBoresight;
 
     // Error checking
     if (nPri <= 0) {

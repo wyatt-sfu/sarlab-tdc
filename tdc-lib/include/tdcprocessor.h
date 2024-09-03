@@ -29,20 +29,15 @@
  * 3) Call start()
  * 4) Call imageBuffer() to get a pointer to the focused image data
  *
- * Coordinate system definition:
- * Body Coordinate System:
- * -----------------------
- * Axes:
- *     +Z: Upwards
- *     +Y: Boresight
- *     +X: To the right, from the perspective of the radar (left when
- *         looking directly at radar)
+ * Coordinate system:
+ * This SAR processor is independent of the coordinate system used. Two coordinate
+ * systems are implied: (i) body and (ii) local.
  *
- * Local Coordinate System:
- * ------------------------
- *     +Z: Upwards
- *     +X: Along direction of motion
- *     +Y: Defined by right-hand rule
+ * (i) Body: The processor assumes that the radar antenna pointing direction
+ *           remains fixed in the body coordinate system.
+ * (ii) Local: The local coordinate system is the coordinates in which the focus
+ *             grid is defined. The attitude quaternion defines the rotation from
+ *             the body to the local coordinate system.
  */
 class TdcProcessor
 {
@@ -96,11 +91,12 @@ public:
      * nSamples: Number of samples per PRI.
      * modRate: The modulation rate in Hz/s.
      * startFreq: Start frequency of the linear FMCW chirp in Hz.
+     * bodyBoresight: (x, y, z) of the boresight vector in the body coordinate system
      */
     void setRawData(std::complex<float> const *rawData, float const *priTimes,
                     float const *sampleTimes, float const *position,
                     float const *velocity, float const *attitude, int nPri,
-                    int nSamples, float modRate, float startFreq);
+                    int nSamples, float modRate, float startFreq, float3 bodyBoresight);
 
     /**
      * Configures the focus grid. This needs to be called before start().
@@ -148,6 +144,7 @@ private:
     int nChunks = 0;
     float modRate = 0.0;
     float startFreq = 0.0;
+    float3 bodyBoresight = {0, 0, 0};
     float wavelengthCenter = 0.0;
 
     /* Radar position fields */
