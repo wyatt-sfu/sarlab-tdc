@@ -1,13 +1,14 @@
 /* Standard library headers */
 #include <complex>
+#include <cstddef>
 #include <memory>
 #include <vector>
 
 /* 3rd party libraries */
 #include <gtest/gtest.h>
+#include <spdlog/common.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
-#include <spdlog/common.h>
 #include <vector_types.h>
 
 /* Project headers */
@@ -29,9 +30,9 @@ TEST(TdcProcessorTest, SmokeTest)
     tdc.setFocusGrid(grid.data(), nRows, nCols);
 
     // Setup the raw data
-    int nPri = 750;
-    int nSamples = 1500;
-    int rawNumElem = nPri * nSamples;
+    size_t nPri = 750;
+    size_t nSamples = 1500;
+    size_t rawNumElem = nPri * nSamples;
     std::vector<std::complex<float>> raw(rawNumElem);
     std::vector<float> priTimes(rawNumElem);
     std::vector<float> sampleTimes(nSamples);

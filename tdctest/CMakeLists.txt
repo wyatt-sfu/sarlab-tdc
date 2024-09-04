@@ -11,6 +11,7 @@ find_package(GTest REQUIRED)
 # Executable target
 add_executable(tdctest
     tdctest.cpp
+    mathtest.cpp
 )
 
 # Linking
