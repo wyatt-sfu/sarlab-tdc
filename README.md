@@ -11,5 +11,5 @@ your machine).
 
 ## Python Library Setup
 1) Install pybind in your Python environment (i.e. pip install pybind11).
-2) cd <GIT CLONE LOCATION>/py-sarlabtdc
+2) cd `GIT CLONE LOCATION`/py-sarlabtdc
 3) pip install .
