@@ -1,28 +1,36 @@
 /* Standard library headers */
+#include <complex>
+#include <memory>
 #include <vector>
 
 /* 3rd party libraries */
 #include <gtest/gtest.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/common.h>
+#include <vector_types.h>
 
 /* Project headers */
 #include "tdcprocessor.h"
 
-TEST(TdcProcessorTest, BasicTest)
+/**
+ * The purpose of this test is to just run the SAR processor and make sure
+ * it does not crash.
+ */
+TEST(TdcProcessorTest, SmokeTest)
 {
     TdcProcessor tdc(0);
 
     // Setup the focus grid
-    int nRows = 150;
-    int nCols = 150;
+    int nRows = 20;
+    int nCols = 20;
     int gridNumElem = nRows * nCols * 3;
     std::vector<float> grid(gridNumElem);
     tdc.setFocusGrid(grid.data(), nRows, nCols);
 
     // Setup the raw data
-    int nPri = 1250;
-    int nSamples = 4000;
+    int nPri = 750;
+    int nSamples = 1500;
     int rawNumElem = nPri * nSamples;
     std::vector<std::complex<float>> raw(rawNumElem);
     std::vector<float> priTimes(rawNumElem);
@@ -44,4 +52,6 @@ TEST(TdcProcessorTest, BasicTest)
     bool applyRangeWin = true;
 
     tdc.start(dopplerBandwidth, applyRangeWin);
+    float2 const *img = tdc.imageBuffer();
+    ASSERT_NE(img, nullptr);
 }
