@@ -10,6 +10,6 @@ by using the VCPKG_ROOT environment variable (check that this variable exists on
 your machine).
 
 ## Python Library Setup
-1) Install pybind in your Python environment (i.e. pip install pybind11).
-2) cd `GIT CLONE LOCATION`/py-sarlabtdc
-3) pip install .
+1) Install pybind in your Python environment (i.e. `pip install pybind11`).
+2) cd sarlab-tdc/py-sarlabtdc
+3) Run `pip install .`
