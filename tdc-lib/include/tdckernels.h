@@ -75,6 +75,7 @@ void correlateAndSum(
     float2 *reference, // 2D, Reference response to correlate with
     void *scratch, // Scratch space for sum reduction
     size_t scratchSize, // Size of sum scratch space
+    float2 *sumVal, // The sum result will be placed here
 
     // Focus image
     float2 *pixel, // Pointer to the current pixel

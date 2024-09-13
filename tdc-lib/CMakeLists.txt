@@ -34,4 +34,5 @@ target_link_libraries(tdc-lib PUBLIC
     fmt::fmt
     spdlog::spdlog
     CUDA::cudart_static
+    CUDA::npps
 )

@@ -179,6 +179,7 @@ private:
     GpuArrayPtr<float> sampleTimesGpu;
     GpuArrayPtr<float> rangeWindowGpu;
     GpuArrayPtr<float2> imageGpu;
+    GpuArrayPtr<float2> sumValueGpu;
 
     /* Logging */
     std::shared_ptr<spdlog::logger> log;

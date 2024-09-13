@@ -49,10 +49,7 @@ TdcProcessor::TdcProcessor(int gpuNum)
     }
 }
 
-TdcProcessor::~TdcProcessor()
-{
-    cudaDeviceReset();
-}
+TdcProcessor::~TdcProcessor() {}
 
 void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
 {
@@ -119,6 +116,7 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
                         referenceGpu->ptr(), //
                         sumScratchGpu->ptr(), //
                         sumScratchGpu->size(), //
+                        sumValueGpu->ptr(), //
 
                         // Focus image pixel
                         pixelPtr,
@@ -179,6 +177,13 @@ void TdcProcessor::setRawData(std::complex<float> const *rawData, float const *p
         throw std::invalid_argument("nSamples must be greater than 0");
     }
 
+    // Log the values
+    const float *tmp = reinterpret_cast<const float *>(rawData);
+    log->info("Modulation rate: {} GHz/ms", modRate / 1e12);
+    log->info("Start frequency: {} GHz", startFreq / 1e9);
+    log->info("Boresight vector: [{}, {}, {}]", bodyBoresight.x, bodyBoresight.y,
+              bodyBoresight.z);
+
     // Compute the wavelength of the center of the chirp
     double chirpTime = sampleTimes[nSamples - 1] - sampleTimes[0];
     double endFreq = startFreq + (static_cast<double>(modRate) * chirpTime);
@@ -236,6 +241,7 @@ void TdcProcessor::allocateGpuMemory()
     log->info("Sum scratch size: {}", scratchSize);
     sumScratchGpu = std::make_unique<GpuArray<uint8_t>>(scratchSize);
     rangeWindowGpu = std::make_unique<GpuArray<float>>(nSamples);
+    sumValueGpu = std::make_unique<GpuArray<float2>>(1);
     log->info("... Done allocating GPU scratch space");
 }
 

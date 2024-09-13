@@ -1,16 +1,22 @@
 /* Standard library headers */
 #include <algorithm>
 #include <cstddef>
+#include <stdexcept>
 
 /* CUDA headers */
 #include <cstdlib>
-#include <cub/cub.cuh>
-#include <cub/device/device_reduce.cuh>
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <driver_types.h>
+#include <fmt/core.h>
 #include <math_constants.h>
+#include <nppdefs.h>
+#include <npps.h>
+#include <npps_statistics_functions.h>
 #include <vector_types.h>
+
+/* 3rd party headers */
+#include <fmt/format.h>
 
 /* Project headers */
 #include "gpumath.h"
@@ -21,9 +27,6 @@
 #include "tdckernels.h"
 
 #define SPEED_OF_LIGHT_F 299792458.0F
-
-/* Global variable used for storing the maximum of the window array */
-__device__ float2 SumResults;
 
 /**
  * Cuda kernel for initializing the range window array.
@@ -268,6 +271,7 @@ void correlateAndSum(
     float2 *__restrict__ reference, // 2D, Reference response to correlate with
     void *__restrict__ scratch, // Scratch space for sum reduction
     size_t scratchSize, // Size of sum scratch space
+    float2 *sumVal, // The sum result will be placed here
 
     // Focus image
     float2 *__restrict__ pixel, // Pointer to the current pixel
@@ -286,14 +290,11 @@ void correlateAndSum(
                                                     nSamples);
 
     // Then sum the result
-    void *devPtr;
-    cudaGetSymbolAddress(&devPtr, SumResults);
-    float2 *sumResult = reinterpret_cast<float2 *>(devPtr);
     size_t priIndex = chunkIdx * PRI_CHUNKSIZE;
     size_t prisToSum = std::min(PRI_CHUNKSIZE, nPri - priIndex);
-    cub::DeviceReduce::Sum(scratch, scratchSize, reference, sumResult,
-                           prisToSum * nSamples);
-    addToImage<<<1, 1>>>(pixel, sumResult);
+    nppsSum_32fc((const Npp32fc *) reference, prisToSum * nSamples, (Npp32fc *) sumVal,
+                 (Npp8u *) scratch);
+    addToImage<<<1, 1>>>(pixel, sumVal);
 }
 
 /**
@@ -301,11 +302,12 @@ void correlateAndSum(
  */
 size_t sumScratchSize(int nSamples)
 {
-    void *scratch = nullptr;
     size_t scratchSize = 0;
-    float2 *dataIn = nullptr;
-    float2 dataOut = {0, 0};
-    cub::DeviceReduce::Sum(scratch, scratchSize, dataIn, &dataOut,
-                           PRI_CHUNKSIZE * nSamples);
+    NppStatus status =
+        nppsSumGetBufferSize_32fc(PRI_CHUNKSIZE * nSamples, &scratchSize);
+    if (status != 0) {
+        throw std::runtime_error(fmt::format(
+            "Error while computing scratch space size: {}", static_cast<int>(status)));
+    }
     return scratchSize;
 }
