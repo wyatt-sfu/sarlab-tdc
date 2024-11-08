@@ -38,10 +38,12 @@
 TdcProcessor::TdcProcessor(int gpuNum)
 {
     // Initialize with logging to null
-    log = spdlog::null_logger_mt("NULL");
+    log = spdlog::get("NULL");
+    if (!log) {
+        log = spdlog::null_logger_mt("NULL");
+    }
 
     // Initialize the GPU
-    log->info("Initializing GPU {}", gpuNum);
     cudaError_t const err = cudaSetDevice(gpuNum);
     if (err != cudaSuccess) {
         throw std::runtime_error(
@@ -201,15 +203,22 @@ void TdcProcessor::setFocusGrid(float const *focusGrid, int nRows, int nCols)
 
 void TdcProcessor::setLoggerSinks(const std::vector<spdlog::sink_ptr> &sinks)
 {
-    auto tdcLogger =
-        std::make_shared<spdlog::logger>("TDCPROC", sinks.begin(), sinks.end());
-    spdlog::register_logger(tdcLogger);
+    log = spdlog::get("TDCPROC");
+    if (!log) {
+        // The logger does not exist, so create it and set it up
+        log = std::make_shared<spdlog::logger>("TDCPROC", sinks.begin(), sinks.end());
+        spdlog::register_logger(log);
+        spdlog::set_default_logger(log);
+        spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] %v");
+        spdlog::set_level(spdlog::level::debug);
+        log->flush_on(spdlog::level::info);
+    } else {
+        // The logger exists, so just change the sinks
+        log->sinks().clear();
+        log->sinks().insert(log->sinks().begin(), sinks.begin(), sinks.end());
+    }
 
-    spdlog::set_default_logger(tdcLogger);
-    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] %v");
-    spdlog::set_level(spdlog::level::debug);
-    tdcLogger->flush_on(spdlog::level::info);
-    tdcLogger->info("Completed logging setup");
+    log->info("Completed logging setup");
     log = spdlog::get("TDCPROC");
 }
 
