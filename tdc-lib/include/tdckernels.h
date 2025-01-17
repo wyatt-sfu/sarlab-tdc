@@ -36,7 +36,11 @@ void createWindow(
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
+
+    // Processing parameters
     float dopplerBw, // [Hz] Bandwidth for windowing
+    float dopplerWinCenter, // Center frequency of the Doppler window
+    bool dopCentroidWin, // If this is true, the Doppler centroid is used for windowing
 
     // Data shape arguments
     int chunkIdx, // Current chunk index

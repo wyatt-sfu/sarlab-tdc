@@ -40,12 +40,12 @@ __host__ __device__ inline float dopplerFreq(const float3 &pos, const float3 &ve
  * Compute a window based on the difference between the Doppler frequency and
  * the Doppler centroid.
  */
-__host__ __device__ inline float dopplerWindow(float fDop, float fDopCentroid,
+__host__ __device__ inline float dopplerWindow(float fDop, float fDopCenter,
                                                float dopplerBw)
 {
-    float deltaFDop = fDop - fDopCentroid;
+    float deltaFDop = fDop - fDopCenter;
     float azWin = 0.0;
-    if (fabs(fDop) <= dopplerBw / 2.0) {
+    if (fabs(deltaFDop) <= dopplerBw / 2.0) {
         azWin = AZIMUTH_WINDOW_A_PARAMETER
                 - ((1.0F - AZIMUTH_WINDOW_A_PARAMETER)
                    * cosf((2.0F * PI_F * deltaFDop / dopplerBw) - PI_F));

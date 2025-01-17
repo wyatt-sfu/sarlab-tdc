@@ -16,9 +16,11 @@ TdcProcessorWrapper::TdcProcessorWrapper(int gpuNum)
     setupLogging();
 }
 
-void TdcProcessorWrapper::start(float dopplerBandwidth, bool applyRangeWindow)
+void TdcProcessorWrapper::start(float dopplerWinCenter, float dopplerBandwidth,
+                                bool dopCentroidWin, bool applyRangeWin)
 {
-    tdcProc->start(dopplerBandwidth, applyRangeWindow);
+    tdcProc->start(dopplerWinCenter, dopplerBandwidth, dopCentroidWin,
+                   applyRangeWin);
 }
 
 void TdcProcessorWrapper::setRawData(

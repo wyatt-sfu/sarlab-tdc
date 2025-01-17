@@ -52,12 +52,18 @@ public:
      *
      * Arguments:
      * -------------
-     * dopplerBandwidth: [Hz] Controls the width of the azimuth window.
-     * applyRangeWindow: If true, the raw data is range windowed. Set to False if you
-     *                   have already range windowed the raw data.
-     *
+     * dopplerWinCenter: [Hz] If dopCentroidWin is false, then this parameter is used
+     *                   to set the center frequency of the Doppler band used for
+     *                   processing.
+     * dopplerBandwidth: [Hz] Controls the width of the Doppler band used for
+     *                   processing.
+     * dopCentroidWin: If this is true, the Doppler centroid is used for windowing
+     *                 and the dopplerWinCenter argument is ignored.
+     * applyRangeWin: If true, the raw data will be range windowed. Set to
+     *                False if you have already range windowed the raw data.
      */
-    void start(float dopplerBandwidth, bool applyRangeWindow);
+    void start(float dopplerWinCenter, float dopplerBandwidth, bool dopCentroidWin,
+               bool applyRangeWin);
 
     /**
      * Configures the raw radar data input to the processor. This needs to be
@@ -133,7 +139,8 @@ private:
     void initGpuData();
     void transferNextChunk(int chunkIdx);
     void stageNextChunk(int chunkIdx);
-    bool windowIsNonZero(const float3 &target, float dopplerBw, float3 bodyBoresight);
+    bool windowIsNonZero(float3 target, float3 bodyBoresight, float dopplerBw,
+                         float dopplerWinCenter, bool dopCentroidWin);
 
     /* Raw data fields */
     std::complex<float> const *rawData = nullptr;
@@ -185,9 +192,9 @@ private:
     std::shared_ptr<spdlog::logger> log;
 
     /* Windowing speedup */
-    static constexpr size_t PointsPerRgLine = 3;
-    static constexpr size_t PointsPerChunk = 3;
-    std::array<float, PointsPerChunk * PointsPerRgLine> dopFreqMag;
+    static constexpr int PointsPerRgLine = 3;
+    static constexpr int PointsPerChunk = 3;
+    std::array<float, static_cast<size_t>(PointsPerChunk *PointsPerRgLine)> dopFreqMag;
 };
 
 #endif // TDCPROCESSOR_H

@@ -1,6 +1,7 @@
 /* Standard library headers */
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <complex>
 #include <cstddef>
 #include <cstdint>
@@ -53,23 +54,26 @@ TdcProcessor::TdcProcessor(int gpuNum)
 
 TdcProcessor::~TdcProcessor() {}
 
-void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
+void TdcProcessor::start(float dopplerWinCenter, float dopplerBandwidth,
+                         bool dopCentroidWin, bool applyRangeWin)
 {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     log->info("Starting the TDC processor");
-    this->applyRangeWindow = applyRangeWindow;
+    this->applyRangeWindow = applyRangeWin;
     allocateGpuMemory();
     allocateHostMemory();
     initGpuData();
+    size_t skippedChunk = 0;
+    size_t processedChunk = 0;
 
     // The data is chunked so that large data collections can still be processed
     // without running out of RAM on the GPU. Useful for laptops.
-    nChunks = static_cast<int>(std::max(nPri / PRI_CHUNKSIZE, 1ULL));
+    nChunks = ceil(static_cast<double>(nPri) / PRI_CHUNKSIZE);
     cudaDeviceSynchronize();
 
     // Start looping through each chunk of data
     for (int i = 0; i < nChunks; ++i) {
-        // Transfer the next chunk of data while we process the current chunk
+        // Transfer the next chunk of data to the GPU
         transferNextChunk(i);
         log->info("Processing chunk {} of {}", i + 1, nChunks);
 
@@ -77,7 +81,10 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
             for (int k = 0; k < gridNumCols; ++k) {
                 float3 target = focusGrid[(j * gridNumCols) + k];
 
-                if (windowIsNonZero(target, dopplerBandwidth, bodyBoresight)) {
+                if (windowIsNonZero(target, bodyBoresight, dopplerBandwidth,
+                                    dopplerWinCenter, dopCentroidWin)) {
+                    processedChunk++;
+
                     // Create the window array
                     createWindow(
                         // Window arrays
@@ -88,7 +95,10 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
                         target, this->bodyBoresight,
 
                         // Radar parameters
-                        wavelengthCenter, dopplerBandwidth,
+                        wavelengthCenter,
+
+                        // Processing parameters
+                        dopplerBandwidth, dopplerWinCenter, dopCentroidWin,
 
                         // Data shape arguments
                         i, nPri, nSamples);
@@ -125,6 +135,8 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
 
                         // Data shape
                         i, nPri, nSamples);
+                } else {
+                    skippedChunk++;
                 }
             }
         }
@@ -141,6 +153,7 @@ void TdcProcessor::start(float dopplerBandwidth, bool applyRangeWindow)
         cudaDeviceSynchronize();
     }
 
+    log->info("Processed {} chunks, skipped {} chunks", processedChunk, skippedChunk);
     log->info("Transferring focused image off the GPU ...");
     imageGpu->deviceToHost(focusedImage.get());
     log->info("... Done transferring the focused image off the GPU");
@@ -329,34 +342,40 @@ void TdcProcessor::stageNextChunk(int chunkIdx)
                 stagingSizeAtt);
 }
 
-bool TdcProcessor::windowIsNonZero(const float3 &target, float dopplerBw,
-                                   float3 bodyBoresight)
+bool TdcProcessor::windowIsNonZero(float3 target, float3 bodyBoresight, float dopplerBw,
+                                   float dopplerWinCenter, bool dopCentroidWin)
 {
     // Compute the Doppler frequency for 9 points in this chunk
     float3 const *posArray = reinterpret_cast<float3 const *>(positionStaging->ptr());
     float3 const *velArray = reinterpret_cast<float3 const *>(velocityStaging->ptr());
     float4 const *attArray = reinterpret_cast<float4 const *>(attitudeStaging->ptr());
 
-    size_t priStep = PRI_CHUNKSIZE / (PointsPerChunk - 1);
-    size_t sampleStep = nSamples / (PointsPerRgLine - 1);
+    int priStep = PRI_CHUNKSIZE / (PointsPerChunk - 1);
+    int sampleStep = static_cast<int>(nSamples) / (PointsPerRgLine - 1);
 
     for (int i = 0; i < PointsPerChunk; ++i) {
         for (int j = 0; j < PointsPerRgLine; ++j) {
             // Read out the values we want from the staging buffers
-            size_t priIdx = std::max((i * priStep) - 1, 0ULL);
-            size_t sampleIdx = std::max((j * sampleStep) - 1, 0ULL);
+            int priIdx = std::max((i * priStep) - 1, 0);
+            int sampleIdx = std::max((j * sampleStep) - 1, 0);
             float3 pos = posArray[(priIdx * nSamples) + sampleIdx];
             float3 vel = velArray[(priIdx * nSamples) + sampleIdx];
             float4 att = attArray[(priIdx * nSamples) + sampleIdx];
 
             float3 antPointing = q_rot(att, bodyBoresight);
 
+            float fDopCenter;
+            if (dopCentroidWin) {
+                fDopCenter = dopplerCentroid(vel, antPointing, wavelengthCenter);
+            } else {
+                fDopCenter = dopplerWinCenter;
+            }
+
             dopFreqMag[(i * PointsPerRgLine) + j] =
-                std::abs(dopplerFreq(pos, vel, target, wavelengthCenter)
-                         - dopplerCentroid(vel, antPointing, wavelengthCenter));
+                std::abs(dopplerFreq(pos, vel, target, wavelengthCenter) - fDopCenter);
         }
     }
 
-    float maxDop = *std::max_element(dopFreqMag.begin(), dopFreqMag.end());
-    return maxDop <= dopplerBw / 2.0;
+    float minDop = *std::min_element(dopFreqMag.begin(), dopFreqMag.end());
+    return minDop <= dopplerBw / 2.0;
 }

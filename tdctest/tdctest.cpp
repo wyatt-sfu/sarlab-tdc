@@ -51,8 +51,9 @@ TEST(TdcProcessorTest, SmokeTest)
 
     float dopplerBandwidth = 5.0;
     bool applyRangeWin = true;
+    bool useDopCentroid = true;
 
-    tdc.start(dopplerBandwidth, applyRangeWin);
+    tdc.start(0.0, dopplerBandwidth, useDopCentroid, applyRangeWin);
     float2 const *img = tdc.imageBuffer();
     ASSERT_NE(img, nullptr);
 }

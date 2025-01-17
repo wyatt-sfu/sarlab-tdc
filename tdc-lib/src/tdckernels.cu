@@ -15,9 +15,6 @@
 #include <npps_statistics_functions.h>
 #include <vector_types.h>
 
-/* 3rd party headers */
-#include <fmt/format.h>
-
 /* Project headers */
 #include "gpumath.h"
 #include "tuning.h"
@@ -82,7 +79,11 @@ __global__ void createWindowKernel(
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
+
+    // Processing parameters
     float dopplerBw, // [Hz] Bandwidth for windowing
+    float dopplerWinCenter, // Center frequency of the Doppler window
+    bool dopCentroidWin, // If this is true, the Doppler centroid is used for windowing
 
     // Data shape arguments
     int chunkIdx, // Current chunk index
@@ -109,13 +110,18 @@ __global__ void createWindowKernel(
         float3 antPointing = q_rot(att, bodyBoresight); // This is already a unit vector
 
         // Then get the Doppler centroid
-        float fDopCentroid = dopplerCentroid(vel, antPointing, lambda);
+        float fDopCenter = 0.0;
+        if (dopCentroidWin) {
+            fDopCenter = dopplerCentroid(vel, antPointing, lambda);
+        } else {
+            fDopCenter = dopplerWinCenter;
+        }
 
         // Now compute the Doppler freq to the target being focused
         float fDop = dopplerFreq(radarPos, vel, target, lambda);
 
         // Window based on the difference to the Doppler centroid
-        float azWin = dopplerWindow(fDop, fDopCentroid, dopplerBw);
+        float azWin = dopplerWindow(fDop, fDopCenter, dopplerBw);
 
         window[elementIdx] = rangeWindow[sampleIdx] * azWin;
     }
@@ -138,7 +144,11 @@ void createWindow(
 
     // Radar parameters
     float lambda, // [m] Radar carrier wavelength
+
+    // Processing parameters
     float dopplerBw, // [Hz] Bandwidth for windowing
+    float dopplerWinCenter, // Center frequency of the Doppler window
+    bool dopCentroidWin, // If this is true, the Doppler centroid is used for windowing
 
     // Data shape arguments
     int chunkIdx, // Current chunk index
@@ -149,9 +159,9 @@ void createWindow(
     dim3 const blockSize(WindowKernel::BlockSizeX, WindowKernel::BlockSizeY, 1);
     dim3 const gridSize((nSamples + blockSize.x - 1) / blockSize.x,
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
-    createWindowKernel<<<gridSize, blockSize>>>(window, rangeWindow, position, velocity,
-                                                attitude, target, bodyBoresight, lambda,
-                                                dopplerBw, chunkIdx, nPri, nSamples);
+    createWindowKernel<<<gridSize, blockSize>>>(
+        window, rangeWindow, position, velocity, attitude, target, bodyBoresight,
+        lambda, dopplerBw, dopplerWinCenter, dopCentroidWin, chunkIdx, nPri, nSamples);
 }
 
 /**
