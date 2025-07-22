@@ -23,7 +23,7 @@ class TdcProcessorWrapper
 public:
     TdcProcessorWrapper(int gpuNum);
     void start(float dopplerWinCenter, float dopplerBandwidth, bool dopCentroidWin,
-               bool applyRangeWin);
+               bool applyRangeWin, bool dopplerWinTaper = true);
     void setRawData(py::array_t<std::complex<float>, py::array::c_style> rawData,
                     py::array_t<float, py::array::c_style> priTimes,
                     py::array_t<float, py::array::c_style> sampleTimes,

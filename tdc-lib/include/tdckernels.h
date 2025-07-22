@@ -41,6 +41,8 @@ void createWindow(
     float dopplerBw, // [Hz] Bandwidth for windowing
     float dopplerWinCenter, // Center frequency of the Doppler window
     bool dopCentroidWin, // If this is true, the Doppler centroid is used for windowing
+    bool dopplerWinTaper, // If true, use an apodization window, else use a rectangular
+                          // window
 
     // Data shape arguments
     int chunkIdx, // Current chunk index

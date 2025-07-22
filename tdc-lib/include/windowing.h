@@ -41,14 +41,18 @@ __host__ __device__ inline float dopplerFreq(const float3 &pos, const float3 &ve
  * the Doppler centroid.
  */
 __host__ __device__ inline float dopplerWindow(float fDop, float fDopCenter,
-                                               float dopplerBw)
+                                               float dopplerBw, bool taper = true)
 {
     float deltaFDop = fDop - fDopCenter;
     float azWin = 0.0;
     if (fabs(deltaFDop) <= dopplerBw / 2.0) {
-        azWin = AZIMUTH_WINDOW_A_PARAMETER
-                - ((1.0F - AZIMUTH_WINDOW_A_PARAMETER)
-                   * cosf((2.0F * PI_F * deltaFDop / dopplerBw) - PI_F));
+        if (taper) {
+            azWin = AZIMUTH_WINDOW_A_PARAMETER
+                    - ((1.0F - AZIMUTH_WINDOW_A_PARAMETER)
+                       * cosf((2.0F * PI_F * deltaFDop / dopplerBw) - PI_F));
+        } else {
+            azWin = 1.0;
+        }
     }
     return azWin;
 }

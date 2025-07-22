@@ -61,9 +61,11 @@ public:
      *                 and the dopplerWinCenter argument is ignored.
      * applyRangeWin: If true, the raw data will be range windowed. Set to
      *                False if you have already range windowed the raw data.
+     * dopplerWinTaper: If true, use an apodization window when doppler windowing, else
+     *                  use a rectangular window.
      */
     void start(float dopplerWinCenter, float dopplerBandwidth, bool dopCentroidWin,
-               bool applyRangeWin);
+               bool applyRangeWin, bool dopplerWinTaper = true);
 
     /**
      * Configures the raw radar data input to the processor. This needs to be

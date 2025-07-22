@@ -39,9 +39,10 @@ __global__ void initRangeWindowKernel(float *__restrict__ rgWin, // 1D range win
     }
 
     if (applyRangeWindow) {
-        rgWin[sampleIdx] =
-            RANGE_WINDOW_A_PARAMETER
-            - ((1.0 - RANGE_WINDOW_A_PARAMETER) * cospif(2.0F * sampleIdx / nSamples));
+        rgWin[sampleIdx] = RANGE_WINDOW_A_PARAMETER
+                           - ((1.0F - RANGE_WINDOW_A_PARAMETER)
+                              * cospif(2.0F * static_cast<float>(sampleIdx)
+                                       / static_cast<float>(nSamples)));
     } else {
         rgWin[sampleIdx] = 1.0F;
     }
@@ -84,6 +85,8 @@ __global__ void createWindowKernel(
     float dopplerBw, // [Hz] Bandwidth for windowing
     float dopplerWinCenter, // Center frequency of the Doppler window
     bool dopCentroidWin, // If this is true, the Doppler centroid is used for windowing
+    bool dopplerWinTaper, // If true, use an apodization window, else use a rectangular
+                          // window
 
     // Data shape arguments
     int chunkIdx, // Current chunk index
@@ -121,7 +124,7 @@ __global__ void createWindowKernel(
         float fDop = dopplerFreq(radarPos, vel, target, lambda);
 
         // Window based on the difference to the Doppler centroid
-        float azWin = dopplerWindow(fDop, fDopCenter, dopplerBw);
+        float azWin = dopplerWindow(fDop, fDopCenter, dopplerBw, dopplerWinTaper);
 
         window[elementIdx] = rangeWindow[sampleIdx] * azWin;
     }
@@ -149,6 +152,8 @@ void createWindow(
     float dopplerBw, // [Hz] Bandwidth for windowing
     float dopplerWinCenter, // Center frequency of the Doppler window
     bool dopCentroidWin, // If this is true, the Doppler centroid is used for windowing
+    bool dopplerWinTaper, // If true, use an apodization window, else use a rectangular
+                          // window
 
     // Data shape arguments
     int chunkIdx, // Current chunk index
@@ -161,7 +166,8 @@ void createWindow(
                         (PRI_CHUNKSIZE + blockSize.y - 1) / blockSize.y, 1);
     createWindowKernel<<<gridSize, blockSize>>>(
         window, rangeWindow, position, velocity, attitude, target, bodyBoresight,
-        lambda, dopplerBw, dopplerWinCenter, dopCentroidWin, chunkIdx, nPri, nSamples);
+        lambda, dopplerBw, dopplerWinCenter, dopCentroidWin, dopplerWinTaper, chunkIdx,
+        nPri, nSamples);
 }
 
 /**

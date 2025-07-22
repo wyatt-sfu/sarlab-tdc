@@ -50,12 +50,14 @@ TdcProcessor::TdcProcessor(int gpuNum)
         throw std::runtime_error(
             fmt::format("Failed to set cuda device: {}", cudaGetErrorString(err)));
     }
+
+    // testArrayGpu = GpuArray<float>(10);
 }
 
 TdcProcessor::~TdcProcessor() {}
 
 void TdcProcessor::start(float dopplerWinCenter, float dopplerBandwidth,
-                         bool dopCentroidWin, bool applyRangeWin)
+                         bool dopCentroidWin, bool applyRangeWin, bool dopplerWinTaper)
 {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     log->info("Starting the TDC processor");
@@ -99,6 +101,7 @@ void TdcProcessor::start(float dopplerWinCenter, float dopplerBandwidth,
 
                         // Processing parameters
                         dopplerBandwidth, dopplerWinCenter, dopCentroidWin,
+                        dopplerWinTaper,
 
                         // Data shape arguments
                         i, nPri, nSamples);
