@@ -14,7 +14,9 @@ PYBIND11_MODULE(_sarlabtdc, m)
 
     py::class_<TdcProcessorWrapper>(m, "TdcProcessor")
         .def(py::init<int>())
-        .def("start", &TdcProcessorWrapper::start)
+        .def("start", &TdcProcessorWrapper::start, py::arg("dopplerWinCenter"),
+             py::arg("dopplerBandwidth"), py::arg("dopCentroidWin"),
+             py::arg("applyRangeWin"), py::arg("dopplerWinTaper") = true)
         .def("setRawData", &TdcProcessorWrapper::setRawData)
         .def("setFocusGrid", &TdcProcessorWrapper::setFocusGrid)
         .def("getFocusedImage", &TdcProcessorWrapper::getFocusedImage);
