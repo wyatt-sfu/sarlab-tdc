@@ -280,7 +280,6 @@ void correlateAndSum(
     float2 const *__restrict__ raw, // 2D, IQ data chunk
     float2 *__restrict__ reference, // 2D, Reference response to correlate with
     void *__restrict__ scratch, // Scratch space for sum reduction
-    size_t scratchSize, // Size of sum scratch space
     float2 *sumVal, // The sum result will be placed here
 
     // Focus image

@@ -127,7 +127,6 @@ void TdcProcessor::start(float dopplerWinCenter, float dopplerBandwidth,
                         rawDataGpu->ptr(), //
                         referenceGpu->ptr(), //
                         sumScratchGpu->ptr(), //
-                        sumScratchGpu->size(), //
                         sumValueGpu->ptr(), //
 
                         // Focus image pixel
