@@ -17,6 +17,7 @@
 
 /* Project headers */
 #include "gpumath.h"
+#include "npp_utils.h"
 #include "tuning.h"
 #include "windowing.h"
 
@@ -307,8 +308,9 @@ void correlateAndSum(
     // Then sum the result
     size_t priIndex = chunkIdx * PRI_CHUNKSIZE;
     size_t prisToSum = std::min(PRI_CHUNKSIZE, nPri - priIndex);
-    nppsSum_32fc((const Npp32fc *) reference, prisToSum * nSamples, (Npp32fc *) sumVal,
-                 (Npp8u *) scratch);
+    auto streamCtx = createNppStreamContext(nullptr);
+    nppsSum_32fc_Ctx((const Npp32fc *) reference, prisToSum * nSamples,
+                     (Npp32fc *) sumVal, (Npp8u *) scratch, streamCtx);
     addToImage<<<1, 1>>>(pixel, sumVal);
 }
 
@@ -318,8 +320,9 @@ void correlateAndSum(
 size_t sumScratchSize(int nSamples)
 {
     size_t scratchSize = 0;
-    NppStatus status =
-        nppsSumGetBufferSize_32fc(PRI_CHUNKSIZE * nSamples, &scratchSize);
+    auto streamCtx = createNppStreamContext(nullptr);
+    NppStatus status = nppsSumGetBufferSize_32fc_Ctx(PRI_CHUNKSIZE * nSamples,
+                                                     &scratchSize, streamCtx);
     if (status != 0) {
         throw std::runtime_error(fmt::format(
             "Error while computing scratch space size: {}", static_cast<int>(status)));
